@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="RAG local com LLM para responder perguntas sobre os Anais da SIC/UESC">
+  <title>Observatório SIC · RAG com LLM</title>
+  <link rel="stylesheet" href="/assets/styles.css?v=6">
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">SIC</span>
+        <div>
+          <strong>Observatório</strong>
+          <span>Anais UESC</span>
+        </div>
+      </div>
+
+      <nav aria-label="Navegação principal">
+        <button class="nav-item active" data-section="search-section">
+          <span aria-hidden="true">⌕</span> Perguntar ao RAG
+        </button>
+        <button class="nav-item" data-section="history-section">
+          <span aria-hidden="true">◷</span> Histórico
+        </button>
+        <button class="nav-item" data-section="generation-evaluation-section">
+          <span aria-hidden="true">✓</span> Avaliar respostas
+        </button>
+        <button class="nav-item" data-section="metrics-section">
+          <span aria-hidden="true">▥</span> Métricas
+        </button>
+      </nav>
+
+      <div class="corpus-card">
+        <div class="status-line">
+          <span id="status-dot" class="status-dot"></span>
+          <span id="status-text">Verificando o corpus…</span>
+        </div>
+        <dl>
+          <div><dt>Documentos</dt><dd id="documents-count">—</dd></div>
+          <div><dt>Fragmentos</dt><dd id="chunks-count">—</dd></div>
+          <div><dt>Embeddings</dt><dd id="embeddings-count">—</dd></div>
+          <div><dt>Nós do grafo</dt><dd id="graph-entities-count">—</dd></div>
+          <div><dt>Relações</dt><dd id="graph-relations-count">—</dd></div>
+        </dl>
+      </div>
+
+      <p class="sidebar-note">Ambiente local de pesquisa. Cada busca e avaliação é registrada para análise científica.</p>
+    </aside>
+
+    <main>
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">TCC · SISTEMA RAG</p>
+          <h1>Perguntas e respostas sobre o corpus</h1>
+        </div>
+        <span class="model-badge">BGE-M3 · 1.024 dimensões</span>
+      </header>
+
+      <section id="search-section" class="page-section active">
+        <div class="search-panel">
+          <label for="query">Pergunta de pesquisa</label>
+          <div class="search-row">
+            <textarea id="query" rows="2" maxlength="1000" placeholder="Ex.: Quais trabalhos investigaram educação ambiental na região sul da Bahia?"></textarea>
+            <button id="search-button" class="primary-button">
+              <span class="button-label">Responder</span>
+              <span class="button-loader" aria-hidden="true"></span>
+            </button>
+          </div>
+          <div class="search-options">
+            <label for="top-k">Quantidade de resultados</label>
+            <select id="top-k">
+              <option value="3">3</option>
+              <option value="5" selected>5</option>
+              <option value="8">8</option>
+              <option value="20">20 (avaliação Recall@5)</option>
+            </select>
+            <span>BGE-M3 + pgvector + Llama 3 local</span>
+          </div>
+        </div>
+
+        <div id="message" class="message" role="status" aria-live="polite"></div>
+
+        <article id="answer-panel" class="answer-panel hidden">
+          <div class="answer-heading">
+            <div>
+              <p class="eyebrow">RESPOSTA FUNDAMENTADA</p>
+              <h2 id="answer-title">Resposta do sistema</h2>
+            </div>
+            <span id="answer-model" class="model-badge"></span>
+          </div>
+          <div id="answer-text" class="answer-text"></div>
+          <div id="answer-sources" class="answer-sources"></div>
+          <details id="route-details" class="route-details">
+            <summary>Como esta pergunta foi processada</summary>
+            <div id="route-summary"></div>
+            <pre id="route-sql" class="hidden"></pre>
+          </details>
+          <div id="answer-meta" class="answer-meta"></div>
+        </article>
+
+        <div id="results-header" class="results-header hidden">
+          <div>
+            <p class="eyebrow">RESULTADOS RECUPERADOS</p>
+            <h2 id="results-title">Fragmentos mais próximos</h2>
+          </div>
+          <div id="timing" class="timing"></div>
+        </div>
+
+        <div id="results" class="results-list"></div>
+      </section>
+
+      <section id="history-section" class="page-section">
+        <div class="section-heading">
+          <div><p class="eyebrow">RASTREABILIDADE</p><h2>Histórico de consultas</h2></div>
+          <button id="refresh-history" class="secondary-button">Atualizar</button>
+        </div>
+        <div id="history-list" class="table-card"></div>
+      </section>
+
+      <section id="generation-evaluation-section" class="page-section">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">AVALIAÇÃO HUMANA DA GERAÇÃO</p>
+            <h2>Qualidade das respostas da V1</h2>
+          </div>
+          <strong id="generation-progress" class="evaluation-progress">—</strong>
+        </div>
+
+        <div class="method-card generation-protocol">
+          <p class="eyebrow">PROTOCOLO</p>
+          <p>Atribua 0 quando houver falha importante, 1 quando o critério for atendido parcialmente e 2 quando for atendido integralmente. Compare cada afirmação da resposta com as fontes apresentadas abaixo.</p>
+        </div>
+
+        <div id="generation-items" class="generation-items"></div>
+        <div id="generation-message" class="message" role="status" aria-live="polite"></div>
+
+        <article id="generation-evaluation-card" class="generation-evaluation-card hidden">
+          <div class="generation-question-block">
+            <p class="eyebrow">PERGUNTA <span id="generation-position"></span></p>
+            <h3 id="generation-query"></h3>
+            <span id="generation-answer-meta" class="answer-meta"></span>
+          </div>
+
+          <div class="generation-comparison">
+            <section>
+              <h3>Resposta avaliada</h3>
+              <div id="generation-answer-text" class="answer-text generation-answer-text"></div>
+            </section>
+            <section>
+              <h3>Fontes fornecidas ao modelo</h3>
+              <div id="generation-sources" class="generation-sources"></div>
+            </section>
+          </div>
+
+          <div class="rubric-grid">
+            <label>
+              <strong>Fidelidade às fontes</strong>
+              <span>As afirmações estão sustentadas pelas evidências?</span>
+              <select id="score-faithfulness"><option value="">Selecione</option><option value="0">0 · falha</option><option value="1">1 · parcial</option><option value="2">2 · integral</option></select>
+            </label>
+            <label>
+              <strong>Correção das citações</strong>
+              <span>Os marcadores [F#] apontam para a fonte correta?</span>
+              <select id="score-citations"><option value="">Selecione</option><option value="0">0 · falha</option><option value="1">1 · parcial</option><option value="2">2 · integral</option></select>
+            </label>
+            <label>
+              <strong>Completude</strong>
+              <span>A resposta utiliza adequadamente as evidências disponíveis?</span>
+              <select id="score-completeness"><option value="">Selecione</option><option value="0">0 · falha</option><option value="1">1 · parcial</option><option value="2">2 · integral</option></select>
+            </label>
+            <label>
+              <strong>Separação entre fontes</strong>
+              <span>Evita transferir dados de um trabalho para outro?</span>
+              <select id="score-separation"><option value="">Selecione</option><option value="0">0 · falha</option><option value="1">1 · parcial</option><option value="2">2 · integral</option></select>
+            </label>
+            <label>
+              <strong>Adequação da recusa</strong>
+              <span>A resposta recusou ou respondeu de modo adequado às evidências?</span>
+              <select id="score-refusal"><option value="">Selecione</option><option value="not_applicable">Não se aplica</option><option value="appropriate">Adequada</option><option value="inappropriate">Inadequada</option></select>
+            </label>
+          </div>
+
+          <label class="generation-notes-label" for="generation-notes">Observações e erros identificados</label>
+          <textarea id="generation-notes" rows="4" maxlength="4000" placeholder="Registre afirmações sem suporte, citações incorretas, omissões ou mistura entre fontes."></textarea>
+
+          <div class="generation-actions">
+            <button id="generation-previous" class="secondary-button">Anterior</button>
+            <span id="generation-save-status" class="save-status"></span>
+            <button id="generation-save" class="primary-button generation-save-button">Salvar e avançar</button>
+          </div>
+        </article>
+      </section>
+
+      <section id="metrics-section" class="page-section">
+        <div class="section-heading">
+          <div><p class="eyebrow">AVALIAÇÃO HUMANA</p><h2>Métricas de acompanhamento</h2></div>
+          <button id="refresh-metrics" class="secondary-button">Atualizar</button>
+        </div>
+        <div id="metric-cards" class="metric-grid"></div>
+        <div class="method-card">
+          <p class="eyebrow">PROTOCOLO</p>
+          <h3>Critério de relevância</h3>
+          <div class="criteria-grid">
+            <p><strong>Relevante</strong> responde diretamente ou fornece evidência essencial para a pergunta.</p>
+            <p><strong>Parcial</strong> trata do tema, mas não responde de modo suficiente ou direto.</p>
+            <p><strong>Não relevante</strong> não contribui para responder à pergunta formulada.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <template id="result-template">
+    <article class="result-card">
+      <div class="result-rank"></div>
+      <div class="result-main">
+        <div class="result-meta"></div>
+        <h3 class="result-person"></h3>
+        <p class="result-text"></p>
+        <div class="result-footer">
+          <a class="pdf-link" target="_blank" rel="noopener">Abrir PDF</a>
+          <button class="copy-button">Copiar trecho</button>
+          <span class="chunk-id"></span>
+        </div>
+        <div class="evaluation">
+          <span class="evaluation-title">Este trecho é relevante?</span>
+          <div class="judgment-buttons">
+            <button data-label="relevant">Relevante</button>
+            <button data-label="partial">Parcial</button>
+            <button data-label="not_relevant">Não relevante</button>
+          </div>
+          <div class="note-row hidden">
+            <input class="note-input" maxlength="2000" placeholder="Observação opcional sobre o julgamento">
+            <button class="save-note secondary-button">Salvar nota</button>
+          </div>
+          <span class="save-status" aria-live="polite"></span>
+        </div>
+      </div>
+      <div class="score-box"><strong></strong><span>similaridade</span></div>
+    </article>
+  </template>
+  <script src="/assets/app.js?v=6" defer></script>
+</body>
+</html>
+

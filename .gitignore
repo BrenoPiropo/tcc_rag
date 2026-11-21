@@ -1,0 +1,12 @@
+.env
+.venv/
+models/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+artifacts/*
+!artifacts/README.md
+logs/*
+!logs/README.md
+
