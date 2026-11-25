@@ -1,0 +1,112 @@
+% !TeX program = xelatex
+\NeedsTeXFormat{LaTeX2e}
+\documentclass[a4paper,12pt,oneside,openany]{monografia_sic_uesc}
+
+\usepackage[brazilian]{babel}
+\usepackage{fontspec}
+\setmainfont{Arial}
+\usepackage{indentfirst}
+\usepackage{graphicx}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage[table]{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc,shapes.geometric}
+\usepackage[section]{placeins}
+\usepackage[hidelinks]{hyperref}
+% A classe legada define \setstretch; o pacote ABNT carrega
+% setspace. A definição é liberada aqui para evitar conflito entre ambos.
+\let\setstretch\undefined
+\usepackage[alf]{abntex2cite}
+\usepackage{longtable}
+\usepackage{pdflscape}
+\input{formatacao_uesc}
+\emergencystretch=3em
+\widowpenalty=10000
+\clubpenalty=10000
+\displaywidowpenalty=10000
+
+\tikzset{
+  fluxobox/.style={draw=blue!65!black, fill=blue!7, rounded corners=2pt,
+    align=center, minimum height=0.9cm, text width=2.7cm, inner sep=5pt},
+  databox/.style={draw=green!55!black, fill=green!8, rounded corners=2pt,
+    align=center, minimum height=0.9cm, text width=2.7cm, inner sep=5pt},
+  resultbox/.style={draw=orange!70!black, fill=orange!12, rounded corners=2pt,
+    align=center, minimum height=0.9cm, text width=2.7cm, inner sep=5pt},
+  flowarrow/.style={-{Latex[length=2.3mm]}, line width=0.75pt, draw=black!75},
+  relationarrow/.style={-{Latex[length=2mm]}, line width=0.7pt, draw=blue!65!black}
+}
+
+\addto\captionsbrazilian{%
+  \renewcommand{\listtablename}{Lista de tabelas}%
+  \renewcommand{\listfigurename}{Lista de figuras}%
+  \renewcommand{\bibname}{REFERÊNCIAS}%
+}
+
+\newcommand{\fontetabela}[1]{%
+  \par\vspace{2pt}%
+  \begin{minipage}{\textwidth}%
+  \setstretch{1}\footnotesize\textbf{Fonte:} #1%
+  \end{minipage}%
+}
+
+\begin{document}
+\setstretch{1.5}
+
+\titulo{Uma Abordagem Baseada em Retrieval-Augmented Generation para Recuperação de Informação nos Anais da Semana de Iniciação Científica da UESC}
+\autor{Breno Gonçalves Pirôpo}
+
+\bacharelado
+\tipo{Trabalho de Conclusão de Curso}
+\curso{Ciência da Computação}
+\ano{2026}
+\cidade{Ilhéus}
+
+\instituicao{Universidade Estadual de Santa Cruz}
+\sigla{UESC}
+\unidadeacademica{Departamento de Engenharias e Computação}
+
+\orientador{Gesil Sampaio Amarante Segundo}
+\ttorientador{UESC}
+
+\capaefolhas
+
+\begin{singlespace}
+\cabecalhoresumo{Resumo}{\titulodamonografia}
+O volume de trabalhos publicados nos Anais da Semana de Iniciação Científica da Universidade Estadual de Santa Cruz dificulta a localização de informações quando a consulta do usuário não utiliza os mesmos termos empregados nos documentos. Este trabalho desenvolveu e avaliou uma abordagem baseada em \textit{Retrieval-Augmented Generation} (RAG) para recuperar evidências dos Anais e produzir respostas rastreáveis às fontes. O corpus reúne 3.969 PDFs das edições 1 a 5, totalizando 3.970 páginas. O texto foi extraído integralmente, segmentado em 7.276 fragmentos e representado pelo modelo multilíngue BAAI/bge-m3 em vetores densos de 1.024 dimensões. Os vetores e os metadados foram armazenados em PostgreSQL com pgvector, e a geração local utilizou o modelo \texttt{llama3:latest} pelo Ollama. Em uma avaliação humana com dez perguntas e 200 julgamentos de relevância, o recuperador obteve macro Recall@$5$ condicionado ao \textit{pool}@20 de 0,3504 no nível de fragmento e 0,3614 no nível de documento, além de MRR de 1,0000. As dez respostas geradas receberam nota máxima nos quatro critérios avaliados por um único avaliador, resultado que deve ser interpretado à luz do tamanho da amostra. Para consultas agregadas, foi implementada uma projeção de grafo com 7.628 entidades e 15.717 relações, integrada a um roteador com rotas semântica, estrutural e híbrida. Um ensaio funcional confirmou as cinco consultas estruturais previstas. Os resultados indicam que a arquitetura preserva a proveniência e posiciona uma evidência relevante no primeiro lugar das consultas avaliadas, mas ainda apresenta cobertura limitada das evidências no topo do ranking e demanda avaliação humana mais ampla.
+
+\noindent\textbf{Palavras-chave:} recuperação de informação; \textit{Retrieval-Augmented Generation}; busca semântica; iniciação científica; UESC.
+
+\cabecalhoresumo{Abstract}{A Retrieval-Augmented Generation Approach for Information Retrieval in the Proceedings of UESC's Undergraduate Research Week}
+The volume of papers published in the proceedings of the Undergraduate Research Week at the State University of Santa Cruz makes information retrieval difficult when user queries do not employ the same terms found in the documents. This study developed and evaluated a \textit{Retrieval-Augmented Generation} (RAG) approach to retrieve evidence from the proceedings and produce answers traceable to their sources. The corpus comprises 3,969 PDF files from editions 1 to 5, totaling 3,970 pages. The text was fully extracted, divided into 7,276 passages, and represented by the multilingual BAAI/bge-m3 model as 1,024-dimensional dense vectors. Vectors and metadata were stored in PostgreSQL with pgvector, while local generation used \texttt{llama3:latest} through Ollama. In a human evaluation with ten questions and 200 relevance judgments, the retriever achieved a macro Recall@$5$ conditioned on \textit{pool}@20 of 0.3504 at passage level and 0.3614 at document level, as well as an MRR of 1.0000. All ten generated answers received the maximum score in the four criteria assessed by a single evaluator, a result that must be interpreted in light of the sample size. For aggregate queries, a graph projection with 7,628 entities and 15,717 relations was implemented and connected to a router with semantic, structural, and hybrid routes. A functional test confirmed the five planned structural queries. The results show that the architecture preserves provenance and ranks one relevant item first for all evaluated queries, but still has limited evidence coverage at the top of the ranking and requires broader human evaluation.
+
+\noindent\textbf{Keywords:} information retrieval; Retrieval-Augmented Generation; semantic search; undergraduate research; UESC.
+
+\listoffigures
+\listoftables
+
+\chapter*{Lista de abreviaturas e siglas}
+\begin{description}
+    \item[GraphRAG] Graph-based Retrieval-Augmented Generation.
+    \item[LLM] Large Language Model.
+    \item[MRR] Mean Reciprocal Rank.
+    \item[OCR] Optical Character Recognition.
+    \item[PDF] Portable Document Format.
+    \item[RAG] Retrieval-Augmented Generation.
+    \item[SIC UESC] Portal dos Anais do evento de iniciação científica da UESC.
+    \item[SQL] Structured Query Language.
+    \item[UESC] Universidade Estadual de Santa Cruz.
+\end{description}
+
+\tableofcontents
+\end{singlespace}
+\iniciartextual
+
+\input{tcc_anais}
+
+\bibliographystyle{abntex2-alf}
+\bibliography{biblio}
+
+\end{document}

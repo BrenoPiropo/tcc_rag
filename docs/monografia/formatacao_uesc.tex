@@ -1,0 +1,166 @@
+% Ajustes locais da monografia. A classe monografia.cls permanece intacta.
+\setlength{\voffset}{0pt}
+\setlength{\hoffset}{0pt}
+\usepackage[a4paper,left=3cm,right=2cm,top=3cm,bottom=2cm,
+            headheight=12pt,headsep=1cm]{geometry}
+\usepackage{booktabs}
+\usepackage{etoolbox}
+\IfFileExists{ficha_catalografica_uesc.pdf}{\usepackage{pdfpages}}{%
+  \IfFileExists{folha_aprovacao_uesc.pdf}{\usepackage{pdfpages}}{}}
+\counterwithout{figure}{chapter}
+\counterwithout{table}{chapter}
+
+\setlength{\parindent}{1.25cm}
+\setlength{\parskip}{0pt}
+\setlength{\textfloatsep}{14pt plus 2pt minus 3pt}
+\setlength{\intextsep}{12pt plus 2pt minus 2pt}
+\setlength{\floatsep}{12pt plus 2pt minus 2pt}
+\raggedbottom
+
+\makeatletter
+\long\def\@makecaption#1#2{%
+  {\setstretch{1}\normalsize\raggedright
+   \noindent #1 \textendash\ #2\par}%
+  \vspace{5pt}}
+
+\newcommand\ps@numeracaoacademica{%
+  \let\@oddfoot\@empty\let\@evenfoot\@empty
+  \def\@oddhead{\hfil{\footnotesize\thepage}}%
+  \let\@evenhead\@oddhead}
+
+\newcommand{\iniciartextual}{%
+  \clearpage
+  \let\ps@headings\ps@numeracaoacademica
+  \let\ps@plain\ps@numeracaoacademica
+  \hypersetup{pageanchor=true}%
+  \pagestyle{numeracaoacademica}}
+
+\renewcommand\@makechapterhead[1]{%
+  {\parindent\z@\raggedright\normalfont\normalsize\bfseries
+   \interlinepenalty\@M
+   \settowidth{\@tempdima}{\thechapter\space}%
+   \hangindent\@tempdima\hangafter=1
+   \noindent\thechapter\space#1\par\nobreak
+   \vskip\baselineskip}}
+\renewcommand\@makeschapterhead[1]{%
+  {\parindent\z@\centering\normalfont\normalsize\bfseries
+   \interlinepenalty\@M\MakeUppercase{#1}\par\nobreak
+   \vskip\baselineskip}}
+\renewcommand\section{\@startsection{section}{1}{\z@}
+  {-\baselineskip}{\baselineskip}{\normalfont\normalsize\bfseries}}
+\renewcommand\subsection{\@startsection{subsection}{2}{\z@}
+  {-\baselineskip}{\baselineskip}{\normalfont\normalsize}}
+
+\renewcommand\l@chapter[2]{%
+  \@dottedtocline{0}{0pt}{3.3em}{\textbf{#1}}{#2}}
+\renewcommand\l@section[2]{%
+  \@dottedtocline{1}{0pt}{3.3em}{\textbf{#1}}{#2}}
+\renewcommand\l@subsection{\@dottedtocline{2}{0pt}{3.3em}}
+\setcounter{tocdepth}{2}
+\renewcommand\tableofcontents{%
+  \chapter*{\contentsname}%
+  {\setlength{\baselineskip}{14pt}\@starttoc{toc}\par}}
+\renewcommand\listoffigures{\chapter*{\listfigurename}\@starttoc{lof}}
+\renewcommand\listoftables{\chapter*{\listtablename}\@starttoc{lot}}
+
+% Referências em espaço simples, com alinhamento à esquerda e separação uniforme.
+\AtBeginEnvironment{thebibliography}{%
+  \setstretch{1}%
+  \def\UrlLeft{}\def\UrlRight{}}
+\AfterTheBibliography{%
+  \thispagestyle{numeracaoacademica}%
+  \raggedright
+  \setlength{\leftskip}{0pt}%
+  \setlength{\itemindent}{0pt}%
+  \setlength{\itemsep}{\baselineskip}%
+  \setlength{\parsep}{0pt}}
+
+\newcommand{\naturezatrabalho}{%
+  Trabalho de Conclusão de Curso apresentado ao Curso de \@curso\ da
+  \@instituicao\ como requisito parcial para a obtenção do grau de
+  bacharel em \@curso.}
+\newcommand{\titulodamonografia}{\@titulo}
+\newcommand{\cabecalhoresumo}[2]{%
+  \clearpage
+  {\centering\bfseries #2\par
+   \vskip\baselineskip
+   \MakeUppercase{#1}\par\nobreak
+   \vskip\baselineskip}}
+\newcommand{\capaefolhas}{%
+  \hypersetup{pdftitle={\@titulo},pdfauthor={\@autor},pageanchor=false}%
+  \let\ps@headings\ps@empty
+  \pagestyle{empty}%
+  \begingroup
+  \setstretch{1}%
+  {\centering
+   \textbf{\MakeUppercase{\@instituicao}}\\
+   \textbf{\MakeUppercase{\@unidadeacademica}}\\
+   \textbf{\MakeUppercase{Curso de \@curso}}\par
+   \vspace{2cm}%
+   \textbf{\MakeUppercase{\@autor}}\par
+   \vfill
+   \textbf{\MakeUppercase{\@titulo}}\par
+   \vfill
+   \@cidade\\\@ano\par}%
+  \clearpage
+  \setcounter{page}{1}%
+  {\centering
+   \textbf{\MakeUppercase{\@autor}}\par
+   \vspace{0.24\textheight}%
+   \textbf{\MakeUppercase{\@titulo}}\par}%
+  \vspace{2cm}%
+  \hfill\begin{minipage}{0.5\textwidth}
+    \naturezatrabalho\par\medskip
+    \raggedright Orientador:\par
+    \@orientador.
+  \end{minipage}\par
+  \vfill
+  {\centering\@cidade\\\@ano\par}%
+  \clearpage
+  % Dados catalográficos oficiais, quando emitidos, ficam fora da contagem.
+  \IfFileExists{ficha_catalografica_uesc.pdf}{%
+    \includepdf[pages=1,pagecommand={\thispagestyle{empty}}]{ficha_catalografica_uesc.pdf}%
+    \addtocounter{page}{-1}%
+  }{}%
+  \IfFileExists{folha_aprovacao_uesc.pdf}{%
+    \includepdf[pages=1,pagecommand={\thispagestyle{empty}}]{folha_aprovacao_uesc.pdf}%
+  }{%
+    {\centering
+     \textbf{\MakeUppercase{\@autor}}\par
+     \vspace{2.6cm}%
+     \textbf{\MakeUppercase{\@titulo}}\par}%
+    \vspace{1.7cm}%
+    \hfill\begin{minipage}{0.5\textwidth}
+      \naturezatrabalho
+    \end{minipage}\par
+    \vspace{1.5cm}%
+    \noindent Data de aprovação: \rule{4.5cm}{0.4pt}\par
+    \vspace{1.6cm}%
+    {\centering
+     \rule{9cm}{0.4pt}\\
+     \@orientador\\\@ttorientador\ (orientador)\par
+     \vspace{1.9cm}%
+     \rule{9cm}{0.4pt}\\Membro da banca examinadora\par
+     \vspace{1.9cm}%
+     \rule{9cm}{0.4pt}\\Membro da banca examinadora\par}%
+    \clearpage
+  }%
+  \endgroup
+  \pagestyle{empty}}
+\makeatother
+
+% NBR 10520:2023: mantém a forma dos sobrenomes das chamadas narrativas.
+% O arquivo de referências continua usando as entradas bibliográficas em caixa alta.
+\ExplSyntaxOn
+\cs_new_eq:NN \tcc_orig_abntrefinfo:nnn \abntrefinfo
+\cs_new_protected:Npn \tcc_abntrefinfo_alt:nnn #1#2#3
+  { \tcc_orig_abntrefinfo:nnn {#1} {#2} {#3} }
+\cs_generate_variant:Nn \tcc_abntrefinfo_alt:nnn { nVn }
+\RenewDocumentCommand{\abntrefinfo}{mmm}
+  {
+    \tl_set:Nn \l_tmpa_tl {#1}
+    \tl_replace_all:Nnn \l_tmpa_tl { ,~ } { ;~ }
+    \tl_replace_all:Nnn \l_tmpa_tl { ~e~ } { ;~ }
+    \tcc_abntrefinfo_alt:nVn {#1} \l_tmpa_tl {#3}
+  }
+\ExplSyntaxOff

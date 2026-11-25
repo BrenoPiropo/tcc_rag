@@ -1,0 +1,148 @@
+{
+  "validated_at": "2026-11-20T16:32:16.602577-03:00",
+  "status": "valid",
+  "entity_counts": {
+    "course": 60,
+    "edition": 5,
+    "person": 3594,
+    "work": 3969
+  },
+  "relation_counts": {
+    "ADVISED_BY": 3965,
+    "ASSOCIATED_WITH_COURSE": 3814,
+    "AUTHORED_BY": 3969,
+    "PRESENTED_IN": 3969
+  },
+  "integrity": {
+    "documents": 3969,
+    "work_nodes": 3969,
+    "orphan_relations": 0,
+    "works_with_invalid_author_count": 0,
+    "works_with_invalid_edition_count": 0
+  },
+  "works_by_edition": [
+    {
+      "edition": "Edição 1",
+      "works": 680
+    },
+    {
+      "edition": "Edição 2",
+      "works": 973
+    },
+    {
+      "edition": "Edição 3",
+      "works": 733
+    },
+    {
+      "edition": "Edição 4",
+      "works": 754
+    },
+    {
+      "edition": "Edição 5",
+      "works": 829
+    }
+  ],
+  "top_advisors": [
+    {
+      "entity_id": "eea45ec427cb8c3f40e680bfdcf546ad03fda11808d3376a77bfafa7be95eafc",
+      "advisor": "Wolney Gomes Almeida",
+      "works": 47
+    },
+    {
+      "entity_id": "b34d79fcc46ed4b1279162e078a02ca1489db59383c8fa9c8d7ad3652a82529e",
+      "advisor": "Reinaldo Joaquim dos Santos Dórea",
+      "works": 38
+    },
+    {
+      "entity_id": "5ce08a3aec4a5172310220bd6559106cdff5c0221b02b9bba1a718a368c22165",
+      "advisor": "Cleverson Alves de Lima",
+      "works": 36
+    },
+    {
+      "entity_id": "7492b4433c18e6849f1b24546adbd0567b83f90fdc0518a70d6eb7fba9d1fb45",
+      "advisor": "Itala Paris de Souza",
+      "works": 35
+    },
+    {
+      "entity_id": "69313fab771d7b53069e38a96686069fa35ff7706bbbe10cfb7e86911634d5bc",
+      "advisor": "Emanuella Gomes Maia",
+      "works": 34
+    },
+    {
+      "entity_id": "2b092b73d8b518a107beefa21dbdb316db097e7723bb8d15e64a8da1c635bdd8",
+      "advisor": "Carla Fernanda Fávaro",
+      "works": 30
+    },
+    {
+      "entity_id": "1529579080cae6d374f28f2fa183067344169aa27078137faa30382664d779c1",
+      "advisor": "Gesil Sampaio Amarante Segundo",
+      "works": 28
+    },
+    {
+      "entity_id": "35aee7eb590a2af183dd6cb99d772a6584472beb08d04aba36cef2d6194fe704",
+      "advisor": "Givaldo Correa dos Santos Neto",
+      "works": 28
+    },
+    {
+      "entity_id": "97234896f31a8b7defab73aa13f4792562cd75d36fb69ca6bc2f8fd9ad1771e7",
+      "advisor": "Raildo Mota de Jesus",
+      "works": 27
+    },
+    {
+      "entity_id": "babebc29251668d119a5b462d35aefa8584001dfbb36e77714428e80ff50f3de",
+      "advisor": "Antônio Oscar Santos Góes",
+      "works": 26
+    },
+    {
+      "entity_id": "6462a0fb961368b5542ff8e2da2802d348e5c8c15d7aa2dee4326dad8b4304a6",
+      "advisor": "SORAYA DANTAS SANTIAGO DOS ANJOS",
+      "works": 24
+    },
+    {
+      "entity_id": "7406bd96dcb033e18f5ad3bf8fc8d80cfa58d0c841fba9f42147610f792ee184",
+      "advisor": "Carla Regina Ferreira Freire Guimarães",
+      "works": 23
+    },
+    {
+      "entity_id": "b8f39bcd775b467286c6ea4bd215f47b025896f4a3740abed66cc9825a21efb4",
+      "advisor": "Eduardo Gross",
+      "works": 23
+    },
+    {
+      "entity_id": "f7c4be84fc81c4644d3eaf81b4f4e59ca1d58b40282f4f3b14999dd599fa0aab",
+      "advisor": "Michelle Araújo Moreira",
+      "works": 23
+    },
+    {
+      "entity_id": "123a06aa8247a81028ebbb7cb1d0429b97898bd4a213f37eecfdc6f524f67c06",
+      "advisor": "Andréia Silva Araujo",
+      "works": 22
+    },
+    {
+      "entity_id": "b25e3c1db1ad98cffcd70a021a693e2a6a5d5ee62d66dd7f7befe54ebb02e504",
+      "advisor": "David Ohara",
+      "works": 22
+    },
+    {
+      "entity_id": "98eec490f8cb33be11b2538b20ebd5dd4280c2e6c27caa6932570a1059dc794f",
+      "advisor": "Dejeane de Oliveira Silva",
+      "works": 22
+    },
+    {
+      "entity_id": "eafa4c1769869dc835d0e62a32e07d40dec6266f5d227a9b1c2ca7ce1ab0fa20",
+      "advisor": "Elisa Prestes Massena",
+      "works": 22
+    },
+    {
+      "entity_id": "0b9ed98934315b1c7b4aacb91503bac111172b93e6e987516bee295ded7aed51",
+      "advisor": "Paulo Eduardo Ambrosio",
+      "works": 22
+    },
+    {
+      "entity_id": "41e7f8b306c2ddf2119b1a2172634835c73a932e0bd34fc47e130257e29c08f6",
+      "advisor": "Samene Batista Pereira Santana",
+      "works": 22
+    }
+  ],
+  "ranking_limit": "Pessoas são agrupadas pelo nome normalizado. O ranking deve ser interpretado após revisão de homônimos e variantes de nome."
+}

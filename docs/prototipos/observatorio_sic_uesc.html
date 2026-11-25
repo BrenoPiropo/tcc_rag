@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Observatório SIC/UESC</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #152641;
+      --muted: #4d607a;
+      --nav: #13223a;
+      --paper: #f4f6fa;
+      --white: #fff;
+      --blue: #244fc6;
+      --blue-dark: #173b9b;
+      --light-blue: #ebf1ff;
+      --border: #dce3ef;
+      --teal: #17664e;
+      --teal-light: #e8f5ee;
+      font: 16px/1.45 "Segoe UI", system-ui, sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; background: var(--paper); color: var(--ink); }
+    h1, h2, p, dl, dt, dd, ol, ul { margin: 0; }
+    a { color: inherit; }
+    [hidden] { display: none !important; }
+    button, input, select { font: inherit; }
+    button, select { cursor: pointer; }
+    :focus-visible { outline: 3px solid #548bfd; outline-offset: 3px; }
+    h1 { font-size: clamp(32px, 4.1vw, 50px); line-height: 1.05; font-weight: 750; letter-spacing: -.048em; }
+    h2 { font-size: 22px; line-height: 1.18; letter-spacing: -.025em; }
+    .shell { display: grid; grid-template-columns: 224px minmax(0,1fr); min-height: 100vh; }
+    .rail { display: flex; flex-direction: column; background: var(--nav); color: #fff; padding: 24px 17px 23px; }
+    .brand { display: flex; gap: 11px; align-items: center; padding: 1px 5px; }
+    .brand-icon { background: #cbdcff; border-radius: 11px; width: 39px; height: 39px; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 3px; padding: 9px; flex: 0 0 auto; }
+    .brand-icon span { background: #254172; border-radius: 2px; }
+    .brand-icon span:last-child { background: #fff; }
+    .brand strong { display: block; font-size: 16px; line-height: 1.2; font-weight: 750; }
+    .brand small { display: block; margin-top: 3px; color: #c5d2ea; font-size: 13px; }
+    .nav { display: grid; gap: 7px; margin-top: 50px; }
+    .nav a { color: #d7e2f6; text-decoration: none; font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 9px; padding: 10px 9px; border: 1px solid transparent; border-radius: 8px; }
+    .nav a:hover { background: #233956; }
+    .nav a[aria-current="page"] { color: #fff; background: #294b8b; border-color: #4465a1; }
+    .nav .nav-icon { display: inline-grid; width: 25px; height: 25px; place-items: center; font-size: 18px; font-weight: 650; border-radius: 5px; background: #304568; flex: 0 0 auto; }
+    .nav a[aria-current="page"] .nav-icon { background: #d5e2ff; color: #1b438d; }
+    .rail-context { margin-top: auto; border-top: 1px solid #385071; padding: 13px 5px 1px; color: #c5d2ea; font-size: 13px; }
+    .rail-context strong { display: block; font-size: 15px; color: #fff; margin-bottom: 3px; }
+    .workspace { padding: 19px 30px 18px; max-width: 1460px; width: 100%; margin-inline: auto; }
+    .masthead { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-bottom: 13px; border-bottom: 1px solid var(--border); color: var(--muted); font-size: 14px; }
+    .prototype-tag { display: inline-flex; align-items: center; gap: 7px; padding: 4px 8px; border: 1px solid #e9d7ad; background: #fff8e6; color: #6b4a13; border-radius: 6px; font-weight: 650; white-space: nowrap; }
+    .prototype-tag::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #aa7317; }
+    .intro { display: flex; justify-content: space-between; align-items: flex-end; gap: 18px; margin-block: 22px 19px; }
+    .intro p { color: var(--muted); margin-top: 7px; font-size: 17px; }
+    .field { display: grid; gap: 3px; font-size: 14px; font-weight: 700; }
+    select { color: var(--ink); border: 1px solid #bfcce1; border-radius: 7px; background: var(--white); padding: 8px 12px; min-width: 153px; }
+    .metrics { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 13px; margin-bottom: 14px; }
+    .metric { padding: 13px 15px; background: var(--white); border: 1px solid var(--border); border-radius: 10px; }
+    .metric dt { font-size: 14px; color: var(--muted); font-weight: 650; }
+    .metric dd { font-size: 36px; line-height: 1.08; font-weight: 760; letter-spacing: -.045em; font-variant-numeric: tabular-nums; margin: 4px 0 3px; }
+    .metric small { font-size: 13px; color: var(--muted); }
+    .metric:first-child { color: #fff; background: #1c3a70; border-color: #1c3a70; }
+    .metric:first-child dt, .metric:first-child small { color: #e4eeff; }
+    .metric .positive { color: var(--teal); }
+    .metric .negative { color: #9b3d30; }
+    .dashboard-grid { display: grid; grid-template-columns: 1.3fr minmax(0,1fr); gap: 14px; }
+    .card { min-width: 0; background: var(--white); border: 1px solid var(--border); border-radius: 10px; padding: 17px; }
+    .card-sub { color: var(--muted); font-size: 14px; margin-top: 4px; }
+    .chart { --plot-height: 181px; position: relative; margin-top: 21px; display: grid; grid-template-columns: 44px minmax(0,1fr); }
+    .axis { position: relative; height: var(--plot-height); color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+    .axis span { position: absolute; right: 9px; bottom: calc(var(--tick) * 1%); transform: translateY(50%); }
+    .plot { min-width: 0; position: relative; }
+    .gridlines { position: absolute; width: 100%; height: var(--plot-height); pointer-events: none; }
+    .gridlines span { border-top: 1px dashed #d8e1ef; position: absolute; bottom: calc(var(--tick) * 1%); width: 100%; }
+    .gridlines span:first-child { border-top-style: solid; border-color: #b5c4de; }
+    .bar-columns { position: relative; display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); }
+    .column { display: grid; grid-template-rows: var(--plot-height) auto; min-width: 0; text-align: center; padding: 0; background: transparent; border: 0; color: var(--ink); }
+    .column .bar { align-self: end; justify-self: center; width: clamp(21px, 4.2vw, 55px); height: calc(var(--value) * 0.1%); background: #a9bceb; border-radius: 6px 6px 0 0; position: relative; }
+    .column .bar strong { position: absolute; bottom: calc(100% + 1px); width: 100%; left: 0; font-size: 14px; line-height: 1.05; }
+    .column .year { color: var(--muted); font-size: 13px; font-weight: 650; margin-top: 5px; }
+    .column[aria-pressed="true"] .bar { background: var(--blue); }
+    .column[aria-pressed="true"] .year { color: var(--blue-dark); }
+    .column:hover .bar { background: #6185e0; }
+    .chart-note { border-top: 1px solid var(--border); margin-top: 12px; padding-top: 9px; font-size: 13px; color: var(--muted); }
+    .chart-note strong { color: var(--ink); }
+    .course-list { list-style: none; padding: 0; display: grid; gap: 11px; margin-top: 17px; }
+    .course-list li { display: grid; grid-template-columns: minmax(0,1fr) 39px; gap: 3px 9px; align-items: center; }
+    .course-list strong { text-align: right; font-variant-numeric: tabular-nums; }
+    .course-list .microtrack { height: 5px; grid-column: 1/-1; background: #eef1f6; border-radius: 5px; }
+    .microtrack i { display: block; height: 5px; border-radius: 5px; width: calc(var(--value) / 3 * 1%); background: #5d85bd; }
+    .footer { margin-top: 13px; border-top: 1px solid var(--border); padding-top: 9px; color: var(--muted); font-size: 13px; }
+    .search { padding: 12px; background: var(--white); border: 1px solid #bccbe6; border-radius: 10px; }
+    .panel-search { margin-bottom: 14px; background: #edf2fc; }
+    .panel-search label { font-size: 15px; }
+    .panel-reply { color: var(--blue-dark); font-size: 14px; margin: 8px 1px 0; }
+    .panel-reply strong { color: var(--ink); }
+    .search label { display: block; font-size: 13px; font-weight: 700; color: var(--blue-dark); }
+    .search-row { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 10px; margin-top: 4px; }
+    .search input { width: 100%; font-weight: 550; color: var(--ink); font-size: 17px; padding: 8px; border: 1px solid #d8e2f2; border-radius: 6px; }
+    .primary { padding: 8px 14px; background: var(--blue); color: #fff; border: 1px solid var(--blue); border-radius: 6px; font-weight: 700; }
+    .primary:hover { background: var(--blue-dark); }
+    .examples { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin: 9px 0 13px; color: var(--muted); font-size: 13px; }
+    .example { padding: 4px 8px; border-radius: 5px; border: 1px solid #cedaf2; color: var(--blue-dark); background: #fff; font-size: 13px; font-weight: 650; }
+    .example[aria-pressed="true"], .example:hover { background: var(--light-blue); }
+    .answer-grid { display: grid; grid-template-columns: 1.19fr minmax(0,1fr); gap: 14px; align-items: stretch; }
+    .panel-title { display: flex; align-items: center; justify-content: space-between; gap: 7px; }
+    .label { display: inline-flex; padding: 3px 6px; font-size: 12px; line-height: 1.4; font-weight: 700; border-radius: 5px; color: var(--teal); background: var(--teal-light); }
+    .answer-lead { margin-top: 11px; font-size: 16px; color: var(--muted); }
+    .result-list { margin-top: 9px; list-style: none; padding: 0; }
+    .result-list li { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; padding: 8px 0; gap: 8px; }
+    .result-list li + li { border-top: 1px solid var(--border); }
+    .result-list strong { display: block; font-size: 15px; line-height: 1.2; }
+    .result-list small, .source-option small { display: block; color: var(--muted); margin-top: 2px; font-size: 13px; }
+    .citation { display: inline-grid; place-items: center; min-width: 29px; min-height: 25px; padding: 2px 4px; border-radius: 5px; background: var(--light-blue); border: 1px solid #c7d6fa; color: var(--blue-dark); font-size: 12px; font-weight: 750; }
+    button.citation:hover { background: #d9e6ff; }
+    .route { background: #f1f5fd; color: var(--muted); padding: 8px 10px; border-radius: 6px; font-size: 13px; margin-top: 8px; }
+    .route strong { color: var(--ink); }
+    .route-flow { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+    .route-flow span:not(.route-arrow) { color: var(--blue-dark); padding: 2px 6px; font-weight: 650; border: 1px solid #c4d3f2; border-radius: 4px; background: #fff; }
+    .source-options { display: grid; gap: 5px; margin-top: 9px; }
+    .source-option { width: 100%; display: grid; grid-template-columns: 29px minmax(0,1fr); gap: 7px; text-align: left; align-items: start; border: 1px solid var(--border); border-radius: 6px; color: var(--ink); background: #fff; padding: 6px 7px; font-size: 14px; line-height: 1.25; }
+    .source-option[aria-pressed="true"] { background: var(--light-blue); border-color: #97afe7; }
+    .source-option[aria-pressed="true"] .citation { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .source-detail { border-top: 1px solid var(--border); padding-top: 7px; margin-top: 9px; display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; font-size: 13px; }
+    .source-detail dt { color: var(--muted); }
+    .source-detail dd { font-weight: 650; }
+    .feedback { padding: 7px 10px; border-radius: 6px; background: #fff4d8; color: #664617; font-size: 14px; margin: 0 0 10px; }
+    @media (min-width: 1480px) { .workspace { padding-inline: 38px; } }
+    @media (max-width: 930px) {
+      .shell { grid-template-columns: 172px minmax(0,1fr); }
+      .rail { padding-inline: 11px; }
+      .workspace { padding-inline: 16px; }
+      .dashboard-grid, .answer-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 650px) {
+      .shell { display: block; }
+      .rail { padding: 10px 12px; gap: 9px; }
+      .nav { display: flex; margin-top: 0; flex-wrap: wrap; }
+      .nav .nav-icon, .rail-context { display: none; }
+      .nav a { padding: 5px 7px; }
+      .workspace { padding: 12px; }
+      .masthead { align-items: flex-start; }
+      .intro { flex-wrap: wrap; }
+      .metrics { gap: 6px; }
+      .metric { padding: 8px; }
+      .metric dt, .metric small { font-size: 12px; }
+      .metric dd { font-size: 25px; }
+      .search-row { grid-template-columns: 1fr; }
+      .primary { justify-self: start; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="rail">
+      <div class="brand">
+        <div class="brand-icon" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+        <div><strong>Observatório SIC</strong><small>Anais da UESC</small></div>
+      </div>
+      <nav class="nav" aria-label="Áreas do protótipo">
+        <a href="?tela=painel" data-screen="painel"><span class="nav-icon" aria-hidden="true">▥</span>Painel institucional</a>
+        <a href="?tela=consulta" data-screen="consulta"><span class="nav-icon" aria-hidden="true">⌕</span>Consulta pública</a>
+      </nav>
+      <div class="rail-context"><strong>Acervo do estudo</strong>Edições 1 a 5 · 2022–2026</div>
+    </aside>
+
+    <main class="workspace">
+      <div class="masthead"><span>Semana de Iniciação Científica da UESC</span><span class="prototype-tag">Protótipo de pesquisa</span></div>
+
+      <article id="painel" aria-labelledby="dashboard-title">
+        <header class="intro">
+          <div><h1 id="dashboard-title">Painel institucional</h1><p>Acompanhe a produção registrada nos Anais por edição e curso.</p></div>
+          <label class="field" for="edition-select">Edição em foco
+            <select id="edition-select" aria-controls="edition-kpis">
+              <option value="0">Edição 1 · 2022</option>
+              <option value="1" selected>Edição 2 · 2023</option>
+              <option value="2">Edição 3 · 2024</option>
+              <option value="3">Edição 4 · 2025</option>
+              <option value="4">Edição 5 · 2026</option>
+            </select>
+          </label>
+        </header>
+        <form class="search panel-search" id="panel-query-form">
+          <label for="panel-query">Pergunte ao painel</label>
+          <div class="search-row">
+            <input id="panel-query" name="pergunta" type="text" required autocomplete="off" value="Qual edição registrou mais trabalhos?">
+            <button class="primary" type="submit">Consultar <span aria-hidden="true">→</span></button>
+          </div>
+          <p class="panel-reply" id="panel-reply" role="status"></p>
+        </form>
+        <dl class="metrics" id="edition-kpis" aria-live="polite">
+          <div class="metric"><dt>Trabalhos no acervo</dt><dd>3.969</dd><small>5 edições analisadas</small></div>
+          <div class="metric"><dt>Trabalhos na edição em foco</dt><dd id="edition-count">973</dd><small id="edition-note">Edição 2 · 2023</small></div>
+          <div class="metric"><dt>Variação entre edições</dt><dd id="edition-change" class="positive">+43,1%</dd><small id="change-note">Comparação com a edição 1 · 2022</small></div>
+        </dl>
+        <div class="dashboard-grid">
+          <section class="card" aria-labelledby="chart-title">
+            <h2 id="chart-title">Trabalhos por edição</h2>
+            <p class="card-sub">Documentos validados no corpus de 2022 a 2026</p>
+            <div class="chart">
+              <div class="axis" aria-hidden="true"><span style="--tick:0">0</span><span style="--tick:25">250</span><span style="--tick:50">500</span><span style="--tick:75">750</span><span style="--tick:100">1.000</span></div>
+              <div class="plot">
+                <div class="gridlines" aria-hidden="true"><span style="--tick:0"></span><span style="--tick:25"></span><span style="--tick:50"></span><span style="--tick:75"></span><span style="--tick:100"></span></div>
+                <div class="bar-columns" id="edition-bars" aria-label="Escolher edição no gráfico"></div>
+              </div>
+            </div>
+            <p class="chart-note">Selecione uma barra para comparar a edição com a anterior.</p>
+          </section>
+          <section class="card" aria-labelledby="course-title">
+            <h2 id="course-title">Cursos com mais trabalhos</h2>
+            <p class="card-sub">Trabalhos distintos por curso nas cinco edições</p>
+            <ol class="course-list">
+              <li><span>Enfermagem</span><strong>288</strong><span class="microtrack" aria-hidden="true"><i style="--value:288"></i></span></li>
+              <li><span>Biomedicina</span><strong>282</strong><span class="microtrack" aria-hidden="true"><i style="--value:282"></i></span></li>
+              <li><span>Medicina Veterinária</span><strong>276</strong><span class="microtrack" aria-hidden="true"><i style="--value:276"></i></span></li>
+              <li><span>Ciências Biológicas</span><strong>194</strong><span class="microtrack" aria-hidden="true"><i style="--value:194"></i></span></li>
+              <li><span>Agronomia</span><strong>192</strong><span class="microtrack" aria-hidden="true"><i style="--value:192"></i></span></li>
+            </ol>
+          </section>
+        </div>
+        <footer class="footer">Dados do corpus auditado e do experimento estrutural do TCC (2026).</footer>
+      </article>
+
+      <article id="consulta" aria-labelledby="consult-title" hidden>
+        <header class="intro">
+          <div><h1 id="consult-title">Consulte os Anais</h1><p>Pergunte em linguagem natural e confira os registros que sustentam a resposta.</p></div>
+        </header>
+        <form class="search" id="query-form">
+          <label for="query">Sua pergunta ao acervo</label>
+          <div class="search-row">
+            <input id="query" name="pergunta" type="text" required autocomplete="off">
+            <button class="primary" type="submit">Consultar <span aria-hidden="true">→</span></button>
+          </div>
+        </form>
+        <div class="examples" id="examples"><span>Experimente</span></div>
+        <p class="feedback" id="feedback" role="status" hidden></p>
+        <div class="answer-grid">
+          <section class="card" aria-labelledby="answer-title">
+            <div class="panel-title"><h2 id="answer-title">Resposta do acervo</h2><span class="label">Consulta ao grafo</span></div>
+            <div id="answer" aria-live="polite"></div>
+          </section>
+          <aside class="card" aria-labelledby="sources-title" id="sources"></aside>
+        </div>
+        <footer class="footer">Exemplos do experimento estrutural do TCC com os Anais da SIC/UESC (2026).</footer>
+      </article>
+    </main>
+  </div>
+  <script>
+    const byId = id => document.getElementById(id);
+    const screen = new URLSearchParams(location.search).get('tela') === 'consulta' ? 'consulta' : 'painel';
+    document.querySelector('[data-screen="' + screen + '"]').setAttribute('aria-current', 'page');
+    byId('painel').hidden = screen !== 'painel';
+    byId('consulta').hidden = screen !== 'consulta';
+
+    const editions = [
+      { year: 2022, count: 680 }, { year: 2023, count: 973 }, { year: 2024, count: 733 },
+      { year: 2025, count: 754 }, { year: 2026, count: 829 }
+    ];
+    const integer = new Intl.NumberFormat('pt-BR');
+    const percentage = new Intl.NumberFormat('pt-BR', { style: 'percent', maximumFractionDigits: 1, minimumFractionDigits: 1, signDisplay: 'exceptZero' });
+    const editionText = index => 'Edição ' + (index + 1) + ' · ' + editions[index].year;
+    const normalize = value => value.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+    const editionSelect = byId('edition-select');
+    const editionBars = byId('edition-bars');
+    editionBars.innerHTML = editions.map((edition, index) =>
+      '<button type="button" class="column" data-edition="' + index + '" aria-label="' + editionText(index) +
+      ', ' + integer.format(edition.count) + ' trabalhos"><span class="bar" style="--value:' + edition.count +
+      '"><strong>' + edition.count + '</strong></span><span class="year">' + edition.year + '</span></button>'
+    ).join('');
+
+    function focusEdition(index) {
+      const edition = editions[index];
+      const previous = editions[index - 1];
+      const change = previous ? (edition.count - previous.count) / previous.count : null;
+      editionSelect.value = index;
+      byId('edition-count').textContent = integer.format(edition.count);
+      byId('edition-note').textContent = editionText(index);
+      byId('edition-change').textContent = previous ? percentage.format(change) : '—';
+      byId('edition-change').classList.toggle('positive', change > 0);
+      byId('edition-change').classList.toggle('negative', change < 0);
+      byId('change-note').textContent = previous ? 'Comparação com a ' + editionText(index - 1).toLowerCase() : 'Primeira edição do recorte';
+      for (const bar of editionBars.querySelectorAll('button')) {
+        bar.setAttribute('aria-pressed', String(Number(bar.dataset.edition) === index));
+      }
+    }
+    editionSelect.addEventListener('change', () => focusEdition(Number(editionSelect.value)));
+    editionBars.addEventListener('click', event => {
+      const bar = event.target.closest('[data-edition]');
+      if (bar) focusEdition(Number(bar.dataset.edition));
+    });
+    const panelQuery = byId('panel-query');
+    const panelReply = byId('panel-reply');
+
+    function consultPanel() {
+      const question = normalize(panelQuery.value);
+      const year = question.match(/\b(20\d{2})\b/);
+      const number = question.match(/\bedicao ([1-5])\b|\b([1-5])a? edicao\b/);
+      const asksCount = /\b(quantos|quantidade|total)\b/.test(question) && /\btrabalhos\b/.test(question);
+      const asksEdition = /\bedicao\b/.test(question) && /\btrabalhos\b/.test(question);
+      let index = -1;
+      if (asksCount && year) {
+        index = editions.findIndex(edition => edition.year === Number(year[1]));
+      } else if (asksCount && number) {
+        index = Number(number[1] || number[2]) - 1;
+      } else if (asksEdition && /\b(mais|maior)\b/.test(question)) {
+        index = editions.indexOf(editions.reduce((best, edition) => edition.count > best.count ? edition : best));
+      } else if (asksEdition && /\b(menos|menor)\b/.test(question)) {
+        index = editions.indexOf(editions.reduce((least, edition) => edition.count < least.count ? edition : least));
+      }
+      if (index >= 0) {
+        focusEdition(index);
+        panelReply.innerHTML = '<strong>' + editionText(index) + '</strong> · ' +
+          integer.format(editions[index].count) + ' trabalhos registrados nos Anais.';
+      } else {
+        panelReply.textContent = 'Tente perguntar “Qual edição teve mais trabalhos?” ou “Quantos trabalhos houve em 2026?”.';
+      }
+    }
+    byId('panel-query-form').addEventListener('submit', event => {
+      event.preventDefault();
+      consultPanel();
+    });
+    consultPanel();
+
+    const examples = {
+      autor: {
+        label: 'Trabalhos por autor',
+        question: 'Quais foram os trabalhos apresentados por Breno Gonçalves Piropo?',
+        lead: 'O acervo registra <strong>2 trabalhos</strong> apresentados por Breno Gonçalves Piropo.',
+        route: 'Autor → trabalhos → edições',
+        works: [
+          { title: 'Radar de Furto e Roubo de Veículos Automotores', edition: 3, person: 'Breno Gonçalves Piropo' },
+          { title: 'ConectCacau', edition: 4, person: 'Breno Gonçalves Piropo' }
+        ]
+      },
+      curso: {
+        label: 'Trabalhos por curso',
+        question: 'Quais trabalhos estão relacionados ao curso de Ciência da Computação?',
+        lead: '<strong>124 trabalhos distintos</strong> estão associados a Ciência da Computação. Abaixo, dois exemplos.',
+        route: 'Curso → trabalhos associados',
+        works: [
+          { title: 'Gestão inteligente de água', edition: 0, person: 'Alessandro Conceição Santos' },
+          { title: 'Desenvolvimento de plataforma digital para coleta de dados do cultivo do cacau', edition: 0, person: 'Christian Menezes Oliveira' }
+        ]
+      },
+      edicao: {
+        label: 'Contagem por edição',
+        question: 'Quantos trabalhos foram apresentados em cada edição da SIC/UESC?',
+        lead: '<strong>3.969 trabalhos</strong> foram identificados nas cinco edições auditadas.',
+        route: 'Edições → contagem de trabalhos'
+      }
+    };
+
+    const query = byId('query');
+    const exampleButtons = byId('examples');
+    const answer = byId('answer');
+    const sources = byId('sources');
+    const feedback = byId('feedback');
+    let current = examples.autor;
+    exampleButtons.insertAdjacentHTML('beforeend', Object.entries(examples).map(([key, example]) =>
+      '<button type="button" class="example" data-example="' + key + '">' + example.label + '</button>'
+    ).join(''));
+
+    function showSource(index) {
+      const work = current.works[index];
+      for (const option of sources.querySelectorAll('button')) {
+        option.setAttribute('aria-pressed', String(Number(option.dataset.source) === index));
+      }
+      byId('source-detail').innerHTML =
+        '<div><dt>Participante · F' + (index + 1) + '</dt><dd>' + work.person +
+        '</dd></div><div><dt>Edição</dt><dd>' + editionText(work.edition) + '</dd></div>';
+    }
+
+    function showExample(key) {
+      current = examples[key];
+      query.value = current.question;
+      feedback.hidden = true;
+      answer.closest('section').hidden = false;
+      sources.hidden = false;
+      for (const example of exampleButtons.querySelectorAll('button')) {
+        example.setAttribute('aria-pressed', String(example.dataset.example === key));
+      }
+      const items = current.works ? current.works.map((work, index) =>
+        '<li><div><strong>' + work.title + '</strong><small>' + editionText(work.edition) +
+        '</small></div><button type="button" class="citation" data-source="' + index + '" aria-label="Ver fonte ' +
+        (index + 1) + '">F' + (index + 1) + '</button></li>'
+      ) : editions.map((edition, index) =>
+        '<li><strong>' + editionText(index) + '</strong><span>' + edition.count + '</span></li>'
+      );
+      const route = current.route.split(' → ').map(step => '<span>' + step + '</span>')
+        .join('<span class="route-arrow">→</span>');
+      answer.innerHTML = '<p class="answer-lead">' + current.lead + '</p><ol class="result-list">' +
+        items.join('') + '</ol><div class="route"><strong>Como o acervo foi consultado</strong>' +
+        '<div class="route-flow">' + route + '</div></div>';
+      if (current.works) {
+        sources.innerHTML = '<h2 id="sources-title">Fontes da resposta</h2><p class="card-sub">Selecione uma fonte para ver o registro nos Anais.</p><div class="source-options">' +
+          current.works.map((work, index) =>
+            '<button type="button" class="source-option" data-source="' + index + '"><span class="citation">F' +
+            (index + 1) + '</span><span><strong>' + work.title + '</strong><small>Anais SIC/UESC · ' +
+            (work.edition + 1) + 'ª edição</small></span></button>'
+          ).join('') + '</div><dl class="source-detail" id="source-detail" aria-live="polite"></dl>';
+        showSource(0);
+      } else {
+        sources.innerHTML = '<h2 id="sources-title">Base da contagem</h2><p class="card-sub">Corpus auditado dos Anais da SIC/UESC.</p><dl class="source-detail"><div><dt>Recorte analisado</dt><dd>2022–2026</dd></div><div><dt>Documentos válidos</dt><dd>3.969</dd></div></dl>';
+      }
+    }
+    exampleButtons.addEventListener('click', event => {
+      const example = event.target.closest('[data-example]');
+      if (example) showExample(example.dataset.example);
+    });
+    byId('query-form').addEventListener('submit', event => {
+      event.preventDefault();
+      const entered = normalize(query.value);
+      const match = Object.keys(examples).find(key => normalize(examples[key].question) === entered);
+      if (match) {
+        showExample(match);
+      } else {
+        feedback.textContent = 'Este protótipo usa três exemplos do experimento. Selecione uma das consultas acima.';
+        feedback.hidden = false;
+        answer.closest('section').hidden = true;
+        sources.hidden = true;
+      }
+    });
+    for (const section of [answer, sources]) {
+      section.addEventListener('click', event => {
+        const source = event.target.closest('button[data-source]');
+        if (source) {
+          showSource(Number(source.dataset.source));
+          if (section === answer) sources.querySelector('[aria-pressed="true"]').focus({ preventScroll: true });
+        }
+      });
+    }
+    showExample('autor');
+  </script>
+</body>
+</html>

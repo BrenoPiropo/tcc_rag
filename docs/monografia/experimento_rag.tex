@@ -1,0 +1,79 @@
+\section{Experimento temático}
+
+A linha de base foi avaliada com as dez perguntas temáticas da seção anterior. O BAAI/bge-m3 representou cada pergunta como um vetor, e o pgvector selecionou os cinco fragmentos mais próximos entre os 7.276 indexados. O modelo local \texttt{llama3:latest} recebeu as páginas correspondentes após a remoção de fontes duplicadas. As execuções de 13 de novembro de 2026 (identificadores 15 a 24) e as respectivas respostas foram preservadas no PostgreSQL.
+
+\subsection{Uso da similaridade de cosseno}
+
+Para o vetor da pergunta $\mathbf{q}$ e o vetor do fragmento $\mathbf{d}_{i}$, a similaridade foi calculada a partir da distância retornada pelo pgvector:
+
+\begin{equation}
+\operatorname{sim}(\mathbf{q},\mathbf{d}_{i}) = 1 - \operatorname{dist}_{\cos}(\mathbf{q},\mathbf{d}_{i}).
+\end{equation}
+
+A pontuação ordena os fragmentos por proximidade semântica estimada. A Figura~\ref{fig:similaridade-cosseno} apresenta sua interpretação geométrica, e a Tabela~\ref{tab:resultados-experimento-tematico} registra os valores nas cinco primeiras posições. A relevância dos fragmentos e a qualidade das respostas foram julgadas separadamente.
+
+\begin{figure}[!htbp]
+\centering
+\begin{minipage}{0.90\textwidth}
+\caption{Interpretação geométrica da similaridade de cosseno}
+\label{fig:similaridade-cosseno}
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[font=\small, scale=1.0]
+  \draw[->, line width=0.7pt] (0,0) -- (7.2,0) node[right] {dimensão 1};
+  \draw[->, line width=0.7pt] (0,0) -- (0,4.8) node[above] {dimensão 2};
+  \draw[-{Latex[length=2.6mm]}, line width=1.2pt, draw=blue!70!black] (0,0) -- (5.8,2.1) node[right, text=black] {$\mathbf{d}_{i}$};
+  \draw[-{Latex[length=2.6mm]}, line width=1.2pt, draw=orange!80!black] (0,0) -- (3.1,4.0) node[above, text=black] {$\mathbf{q}$};
+  \draw[draw=black!70, line width=0.7pt] (1.35,0.49) arc[start angle=20,end angle=52,radius=1.43];
+  \node at (1.55,1.05) {$\theta$};
+  \node[resultbox, text width=5.8cm] at (10.4,2.5) {$\displaystyle \operatorname{sim}(\mathbf{q},\mathbf{d}_{i})=\cos(\theta)=\frac{\mathbf{q}\cdot\mathbf{d}_{i}}{\lVert\mathbf{q}\rVert\,\lVert\mathbf{d}_{i}\rVert}$\\[3pt]Ângulo menor $\Rightarrow$ maior similaridade};
+\end{tikzpicture}
+}
+\par\smallskip
+{\setstretch{1}\footnotesize\raggedright\textbf{Fonte:} Adaptada de \cite{manning2008ir}.\par}
+\end{minipage}
+\end{figure}
+
+\subsection{Avaliação humana da recuperação}
+
+Um avaliador julgou os vinte primeiros fragmentos de cada pergunta, totalizando 200 julgamentos. As classes foram \textbf{relevante} (evidência diretamente útil), \textbf{parcialmente relevante} (evidência indireta ou insuficiente) e \textbf{não relevante} (sem evidência útil). Somente a primeira classe entrou no cálculo de Recall@$5$ e MRR.
+
+O Recall@$5$ condicionado ao \textit{pool}@20 divide o número de itens relevantes no \textit{top-5} pelo total de relevantes encontrados nas vinte primeiras posições do mesmo recuperador. Na análise documental, cada trabalho foi contado uma vez por pergunta e por corte quando continha pelo menos um fragmento relevante. O denominador representa o conjunto julgado, com cobertura restrita às vinte primeiras posições.
+
+\begin{table}[!htbp]
+\centering
+\caption{Similaridade de cosseno e Recall@$5$ condicionado ao \textit{pool}@20}
+\label{tab:resultados-experimento-tematico}
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.18}
+\footnotesize
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}c*{5}{c}cccc}
+\toprule
+\textbf{Nº} & \multicolumn{5}{c}{\textbf{Cosseno por posição (\%)}} & \multicolumn{2}{c}{\textbf{Fragmentos}} & \multicolumn{2}{c}{\textbf{Documentos}} \\
+& \textbf{1º} & \textbf{2º} & \textbf{3º} & \textbf{4º} & \textbf{5º} & \textbf{Relev.} & \textbf{Recall@$5$} & \textbf{Relev.} & \textbf{Recall@$5$} \\ \midrule
+1 & 60,47 & 60,16 & 59,85 & 59,44 & 59,32 & 5/16 & $0{,}3125$ & 5/16 & $0{,}3125$ \\
+2 & 55,28 & 54,06 & 53,97 & 53,62 & 53,56 & 5/9 & $0{,}5556$ & 5/8 & $0{,}6250$ \\
+3 & 61,97 & 59,20 & 57,86 & 57,62 & 56,82 & 4/8 & $0{,}5000$ & 4/8 & $0{,}5000$ \\
+4 & 57,72 & 56,87 & 55,26 & 54,95 & 54,74 & 2/14 & $0{,}1429$ & 2/13 & $0{,}1538$ \\
+5 & 61,20 & 59,43 & 59,29 & 59,12 & 58,78 & 5/13 & $0{,}3846$ & 5/12 & $0{,}4167$ \\
+6 & 55,49 & 55,12 & 55,11 & 55,07 & 55,02 & 4/13 & $0{,}3077$ & 4/13 & $0{,}3077$ \\
+7 & 61,75 & 61,16 & 61,00 & 60,88 & 60,83 & 3/9 & $0{,}3333$ & 3/8 & $0{,}3750$ \\
+8 & 61,95 & 61,80 & 61,32 & 61,23 & 58,55 & 5/11 & $0{,}4545$ & 3/9 & $0{,}3333$ \\
+9 & 62,98 & 61,26 & 61,19 & 59,99 & 59,64 & 5/20 & $0{,}2500$ & 5/18 & $0{,}2778$ \\
+10 & 57,83 & 57,48 & 57,22 & 56,46 & 56,23 & 5/19 & $0{,}2632$ & 5/16 & $0{,}3125$ \\ \bottomrule
+\end{tabular*}
+\par\smallskip
+\begin{minipage}{\textwidth}
+\setstretch{1}\footnotesize\textbf{Nota:} Relev. mostra a contagem de itens relevantes no \textit{top-5} sobre a contagem no \textit{pool}@20.\\
+\textbf{Fonte:} Dados da avaliação humana realizada pelo autor (2026).
+\end{minipage}
+\end{table}
+
+O Recall@$5$ médio por pergunta foi de $0{,}3504$ por fragmento e $0{,}3614$ por documento. Na agregação das contagens por pergunta, os valores foram $0{,}3258$ (43 de 132 fragmentos) e $0{,}3388$ (41 de 121 documentos). O MRR foi $1{,}0000$ nos dois níveis, pois o primeiro resultado de cada pergunta foi relevante. O MRR informa a posição da primeira evidência. O Recall@$5$ mede a cobertura das evidências até a quinta posição.
+
+Na pergunta sobre saúde pública (nº 4), apenas dois dos quatorze fragmentos relevantes apareceram nas cinco primeiras posições. As similaridades da quinta e da sexta posição foram $0{,}5474$ e $0{,}5437$, respectivamente. Evidências sobre hanseníase em Ilhéus e atendimento em Libras ficaram além do corte. Na pergunta sobre inovação tecnológica (nº 8), cinco fragmentos relevantes correspondiam a apenas três trabalhos. A deduplicação ocorreu depois da recuperação, sem reposição, e a LLM recebeu três fontes distintas. O Recall@$5$ caiu de $0{,}4545$ por fragmento para $0{,}3333$ por documento. O ensaio utilizou uma única configuração de deduplicação, o que limita a interpretação de seu efeito sobre as respostas.
+
+\subsection{Avaliação humana da geração}
+
+O mesmo avaliador comparou as dez respostas com as páginas fornecidas ao modelo, com cinco fontes em nove perguntas e três na pergunta 8. As respostas avaliadas (identificadores 19, 20 e 22 a 29) usaram o \textit{prompt} \texttt{rag-baseline-v1.5}. A escala de 0 a 2 representou falha importante, atendimento parcial e atendimento integral. As dez respostas receberam nota 2 em fidelidade às fontes, correção das citações, completude em relação ao contexto e separação entre fontes. Na pergunta 8, a resposta apresentou três trabalhos e o registro indicava uma recusa adequada. Essa inconsistência levou à exclusão do campo de recusa da interpretação.
+
+A avaliação da geração descreve o aproveitamento das fontes disponibilizadas, enquanto a avaliação da recuperação mede a cobertura no conjunto julgado. A amostra de dez perguntas, a participação de um único avaliador e a possibilidade de evidências fora do \textit{pool}@20 limitam a generalização a outros acervos e modelos. Os julgamentos, as respostas e os parâmetros foram preservados no PostgreSQL e nos artefatos do experimento.

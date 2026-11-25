@@ -1,0 +1,344 @@
+\chapter{INTRODUÇÃO}
+
+A Universidade Estadual de Santa Cruz (UESC) publica, em seu portal de iniciação científica, trabalhos apresentados em diferentes edições do evento SIC UESC. Esses documentos registram pesquisas de graduação e pós-graduação desenvolvidas em áreas como ciências agrárias, saúde, educação, engenharias, computação, ciências humanas e ciências biológicas. A consulta aos Anais permite conhecer temas, métodos e resultados produzidos na Universidade, mas o crescimento do acervo torna a leitura manual pouco viável para buscas exploratórias.
+
+Os mecanismos de pesquisa presentes em páginas web normalmente dependem da correspondência entre as palavras digitadas e os termos registrados nos títulos ou metadados. Essa estratégia é útil, porém pode deixar de localizar trabalhos relacionados quando autores e usuários empregam palavras diferentes para expressar um mesmo conceito. A limitação é relevante em um acervo multidisciplinar, no qual abreviações, sinônimos e terminologias específicas coexistem.
+
+Representações vetoriais de texto, conhecidas como \textit{embeddings}, permitem comparar consultas e documentos pela proximidade de significado. Em conjunto com mecanismos de recuperação, essas representações podem selecionar trechos semanticamente relacionados à pergunta. A arquitetura \textit{Retrieval-Augmented Generation} (RAG) acrescenta um modelo de linguagem ao processo: primeiro, o sistema recupera evidências do corpus; depois, o modelo utiliza apenas essas evidências como contexto para elaborar uma resposta acompanhada de suas fontes \cite{lewis2020rag,gao2024survey}.
+
+Este trabalho investiga o uso de RAG para recuperar informações nos Anais da Semana de Iniciação Científica da UESC. O corpus é composto pelos PDFs disponibilizados no portal SIC UESC \cite{sicuescanais}. O estudo abrange coleta, validação, extração, segmentação, indexação vetorial, recuperação semântica, geração de respostas fundamentadas, avaliação humana e uma camada de grafo para consultas estruturadas e híbridas. O foco é um acervo institucional delimitado, com vínculo direto entre cada trabalho, sua edição e o PDF publicado pela UESC.
+
+As principais contribuições deste trabalho são: (i) a consolidação e a auditoria de um corpus institucional composto pelos trabalhos das edições 1 a 5 da SIC UESC, com preservação da proveniência documental; (ii) a implementação de um fluxo reproduzível de extração, segmentação, representação vetorial, recuperação e geração de respostas; (iii) o desenvolvimento de uma plataforma local para consultar o corpus em linguagem natural, inspecionar as fontes e registrar julgamentos humanos; (iv) a definição de uma linha de base que avalia separadamente a recuperação e a geração; e (v) a integração de uma projeção em grafo e de um roteador para consultas semânticas, estruturadas e híbridas.
+
+\section{Identificação do problema}
+
+Os Anais da SIC UESC reúnem milhares de trabalhos em páginas organizadas por edição. A interface pública apresenta metadados como identificação, autoria, curso, departamento, título e orientação, além de um botão que solicita a geração do PDF. Embora essa estrutura permita consultar trabalhos individualmente, ela não oferece uma forma de formular perguntas em linguagem natural sobre o conjunto documental nem de recuperar passagens semanticamente relacionadas entre edições.
+
+A busca exclusiva por palavras pode falhar quando a consulta e o trabalho utilizam vocabulários distintos. Uma pergunta sobre agricultura de precisão, por exemplo, pode estar relacionada a trabalhos que mencionam sensores, análise de solo, automação rural ou aquisição de dados sem repetir a expressão usada pelo usuário. Da mesma forma, consultas sobre saúde, biodiversidade ou educação podem exigir a combinação de evidências distribuídas em diferentes documentos.
+
+Outro problema é a rastreabilidade. Uma resposta gerada por modelo de linguagem só é útil para a pesquisa acadêmica quando o leitor consegue identificar a passagem que a sustenta, a página em que ela aparece e o documento de origem. A fluência do texto gerado não substitui a verificação da fonte.
+
+Diante desse cenário, a questão de pesquisa foi formulada da seguinte maneira: em que medida uma abordagem baseada em \textit{Retrieval-Augmented Generation}, aplicada aos Anais da Semana de Iniciação Científica da UESC, pode recuperar evidências pertinentes e produzir respostas fundamentadas e rastreáveis aos documentos publicados?
+
+\section{Justificativa}
+
+Os Anais da SIC UESC constituem um registro institucional da pesquisa desenvolvida por estudantes e orientadores. A dispersão dos trabalhos em várias edições dificulta consultas que atravessam anos, cursos e áreas do conhecimento. Uma ferramenta de recuperação capaz de localizar passagens relevantes pode reduzir o esforço necessário para identificar trabalhos relacionados a um tema e apoiar estudantes, professores, gestores e pesquisadores na exploração do acervo.
+
+A escolha de um corpus institucional delimitado melhora a definição do experimento. Todos os documentos partem de um mesmo portal e possuem metadados associados à edição do evento. Essa característica permite controlar a proveniência, verificar a cobertura da coleta e relacionar os resultados aos PDFs publicados. A delimitação também evita misturar artigos de fontes heterogêneas cuja disponibilidade e estrutura variam de maneira difícil de controlar.
+
+A recuperação semântica permite relacionar perguntas e passagens por proximidade de significado, característica adequada a um corpus multidisciplinar no qual a terminologia varia entre áreas e edições. A integração com um modelo de linguagem deve ser avaliada separadamente, pois um texto fluente não comprova que as fontes foram corretamente selecionadas ou interpretadas. O trabalho, portanto, combina utilidade institucional com um protocolo experimental voltado à relevância das evidências, à fidelidade factual e à rastreabilidade.
+
+\section{Objetivos}
+
+\subsection{Objetivo geral}
+
+Desenvolver e avaliar uma abordagem baseada em \textit{Retrieval-Augmented Generation} para recuperar informações nos Anais da Semana de Iniciação Científica da UESC e produzir respostas fundamentadas nos documentos publicados.
+
+\subsection{Objetivos específicos}
+
+\begin{enumerate}
+    \item Mapear as edições e os trabalhos disponíveis no portal SIC UESC.
+    \item Automatizar a obtenção dos PDFs em lotes, com registro de progresso, retomada e tratamento de falhas.
+    \item Validar os arquivos e preservar os metadados necessários para relacionar cada documento à sua edição, autoria, curso, departamento, título e orientação.
+    \item Extrair o conteúdo textual dos PDFs e segmentá-lo com preservação da página de origem.
+    \item Gerar representações vetoriais densas dos trechos e das consultas com um modelo multilíngue de \textit{embeddings}.
+    \item Armazenar vetores, textos e metadados em PostgreSQL com pgvector e implementar recuperação semântica exata por distância de cosseno.
+    \item Integrar as evidências recuperadas a um modelo de linguagem local, exigindo indicação das fontes e recusa quando o contexto for insuficiente.
+    \item Criar uma plataforma que permita ao usuário consultar, em linguagem natural, o corpus dos Anais da SIC UESC, inspecionar as fontes recuperadas e registrar julgamentos humanos de relevância.
+    \item Avaliar a relevância das evidências, a fidelidade factual, a completude, a correção das citações e a rastreabilidade das respostas geradas.
+    \item Implementar uma projeção de grafo e um roteador para consultas semânticas, estruturadas e híbridas sobre autores, orientadores, cursos, edições e conteúdo documental.
+\end{enumerate}
+
+\chapter{FUNDAMENTAÇÃO TEÓRICA}
+
+\input{fundamentacao_teorica_restaurada}
+
+\chapter{METODOLOGIA}
+
+\section{Delineamento da pesquisa}
+
+O trabalho caracteriza-se como pesquisa aplicada, de abordagem quantitativa e qualitativa e com procedimento experimental. A dimensão aplicada corresponde à construção de uma plataforma de consulta aos Anais da SIC UESC; a dimensão quantitativa abrange as auditorias do corpus, as métricas de recuperação e os tempos de execução; e a dimensão qualitativa corresponde aos julgamentos humanos de relevância e de qualidade das respostas. A unidade documental é cada PDF publicado no portal, a unidade de recuperação é o fragmento textual e a unidade de avaliação é o resultado apresentado para uma pergunta previamente definida.
+
+A execução foi organizada em sete etapas: construção e auditoria do corpus, extração textual, segmentação, geração e armazenamento dos \textit{embeddings}, integração do recuperador ao modelo gerador, avaliação humana e implementação da camada de grafo com roteamento de consultas. Parâmetros, versões, identificadores e resultados foram preservados para permitir a reprodução do experimento.
+
+\section{Ambiente computacional}
+
+Os procedimentos são executados no computador pessoal usado como ambiente de desenvolvimento. A configuração registrada para o projeto é apresentada na Tabela~\ref{tab:ambiente}.
+
+\begin{table}[htbp]
+\centering
+\caption{Ambiente computacional utilizado}
+\label{tab:ambiente}
+\renewcommand{\arraystretch}{1.2}
+\small
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{4.2cm}>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Componente} & \textbf{Configuração} \\ \midrule
+Sistema operacional & Microsoft Windows 11 Pro, 64 bits. \\
+Processador & AMD Ryzen 5 5600, com 6 núcleos e 12 processadores lógicos. \\
+Memória RAM & Aproximadamente 32 GB. \\
+Placa de vídeo & NVIDIA GeForce RTX 4060, com 8 GB de memória. \\
+Armazenamento & Unidade C para desenvolvimento e unidade D para os PDFs dos Anais. \\
+Execução dos modelos & BAAI/bge-m3 por Sentence Transformers e llama3:latest pelo Ollama. \\
+Persistência & PostgreSQL 17.11, pgvector 0.8.7, manifestos e logs de execução. \\ \bottomrule
+\end{tabularx}
+\fontetabela{Elaborada pelo autor (2026).}
+\end{table}
+
+\section{Corpus e unidade de análise}
+
+As páginas públicas \url{https://uescsic.com/anais/1} a \url{https://uescsic.com/anais/5} foram analisadas. Cada trabalho é apresentado em um formulário que envia ao endereço \url{https://uescsic.com/pdf-anais} os campos de identificação, edição, nome, e-mail e token de sessão. Como os PDFs não aparecem como links estáticos, foi criado um coletor que preserva a sessão web e reproduz essa solicitação para cada registro.
+
+O coletor trabalha em lotes de 100 arquivos, introduz pausas entre lotes e limita o intervalo entre requisições para reduzir a carga sobre o servidor. Cada download é salvo inicialmente com a extensão \texttt{.parcial}. O arquivo só recebe a extensão \texttt{.pdf} depois que o servidor informa o tipo \texttt{application/pdf} e os primeiros bytes correspondem ao cabeçalho \texttt{\%PDF-}. O nome final combina o identificador do trabalho e o nome do autor. Registros de progresso, manifesto, erros e resumo permitem acompanhar e retomar o processo sem baixar novamente os arquivos válidos.
+
+Os metadados extraídos das páginas foram vinculados aos PDFs por edição, identificador e participante principal. A auditoria calculou o SHA-256 dos arquivos, verificou assinatura PDF, legibilidade estrutural, tamanho, número de páginas e duplicidade de conteúdo. O resultado final foi de 3.969 PDFs válidos, 3.970 páginas, nenhum arquivo criptografado, nenhuma duplicata de conteúdo e nenhum registro crítico.
+
+\section{Preparação e indexação}
+
+O texto foi extraído página a página com pypdf 6.21.4, em modo de preservação de leiaute. As 3.970 páginas produziram texto válido, sem páginas vazias, erros de extração ou candidatos a OCR. Após normalização, o corpus contém 11.964.293 caracteres. Cada página permanece associada ao hash do documento, à edição, ao participante principal e ao caminho do PDF de origem.
+
+A segmentação utiliza sentenças como limites preferenciais e unidades lexicais Unicode como medida operacional. Foram adotados alvo de 450 unidades lexicais, sobreposição desejada de 75 e limite máximo configurado de 520. O processamento produziu 7.276 fragmentos, com média de 335,41 unidades lexicais; o maior fragmento observado possui 450. A auditoria de cobertura confirmou que nenhum caractere não branco ficou fora dos fragmentos.
+
+Os fragmentos foram representados pelo modelo BAAI/bge-m3, fixado na revisão \texttt{5617a9f6\allowbreak 1b028005\allowbreak a4858fda\allowbreak c845db40\allowbreak 6aefb181} \cite{chen2024bgem3}. Foi utilizada a saída densa de 1.024 dimensões, com normalização L2 e comprimento máximo configurado de 1.024 \textit{tokens}. A auditoria pelo tokenizador do modelo observou máximo de 804 \textit{tokens}, portanto nenhum fragmento foi truncado. Os 7.276 vetores foram importados para PostgreSQL 17.11 com pgvector 0.8.7, sem vetores ausentes ou órfãos.
+
+A recuperação semântica compara a pergunta, codificada pelo mesmo modelo, com todos os vetores por distância de cosseno no pgvector \cite{pgvector}. A busca exata estabelece uma referência determinística para avaliações futuras.
+
+\section{Arquitetura da plataforma e protocolo experimental}
+
+A plataforma foi implementada como aplicação web local. A interface recebe perguntas em linguagem natural e as envia ao serviço FastAPI, que registra a execução, seleciona a rota apropriada e consulta o PostgreSQL. Na rota semântica, a pergunta é codificada pelo mesmo modelo empregado na indexação; na rota estrutural, o sistema executa consultas determinísticas sobre a projeção do grafo; e, na rota híbrida, o grafo delimita os documentos antes da recuperação vetorial. Essa separação permite analisar individualmente recuperação, agregação e geração.
+
+\subsection{Geração das respostas}
+
+Na linha de base, a pergunta recupera os cinco fragmentos mais próximos. Fragmentos repetidos do mesmo documento e títulos normalizados duplicados são retirados do contexto fornecido à LLM, embora o ranking integral permaneça armazenado. Para cada fonte selecionada, a página integral é fornecida ao gerador, preservando edição, participante principal, página e marcador no formato \texttt{[F1]}, \texttt{[F2]} e assim sucessivamente.
+
+A geração é realizada localmente pelo Ollama 0.40.16 com o modelo \texttt{llama3:latest}, de 8 bilhões de parâmetros, quantização Q4\_0 e janela de 8.192 \textit{tokens}. Foram fixados temperatura 0, semente 42 e limite de 700 \textit{tokens} de saída. O \textit{prompt} exige uso exclusivo das fontes fornecidas, citação das afirmações factuais, recusa quando a evidência for insuficiente, omissão de dados de contato e desconsideração de instruções que possam aparecer nos documentos.
+
+O texto integral do \textit{prompt} \texttt{rag-baseline-v1.5}, incluindo a mensagem de sistema e o modelo da mensagem do usuário, está na seção \href{https://github.com/BrenoPiropo/tcc_rag/blob/main/README.md\#prompt-da-linha-de-base}{\textit{Prompt da linha de base} do \texttt{README.md}}. A aplicação registra a versão e o SHA-256 da mensagem de sistema a cada geração. O título, a autoria, a orientação e a edição apresentados no catálogo de fontes são extraídos pela aplicação.
+
+\subsection{Procedimento de avaliação}
+
+A aplicação apresenta a resposta e suas fontes, registra o ranking, os tempos e os julgamentos de relevância. A recuperação foi avaliada por Recall@$5$ condicionado ao \textit{pool}@20, nos níveis de fragmento e documento, e por MRR. A avaliação humana da geração considerou fidelidade às fontes, correção das citações, completude e separação entre fontes, com registro separado de recusas. A validação funcional do grafo verificou as rotas e comparou as contagens estruturais com os dados auditados.
+
+\chapter{DESENVOLVIMENTO DO SISTEMA}
+
+O portal foi analisado para identificar o mecanismo de geração dos PDFs. Em seguida, foi implementado um coletor retomável, com lotes configuráveis, três tentativas por item, validação do arquivo, manifesto em CSV, resumo em JSON e arquivo de estado de leitura simples. A coleta integral e a auditoria confirmaram 3.969 documentos válidos das edições 1 a 5.
+
+A extração integral, a segmentação e a geração dos \textit{embeddings} foram concluídas. Os 7.276 fragmentos e seus vetores foram persistidos no PostgreSQL com pgvector. As validações confirmaram correspondência entre documentos, páginas, fragmentos e vetores, ausência de truncamento e persistência dos 7.276 registros após reinicialização do banco.
+
+Foi implementada uma interface web local para recuperação semântica e avaliação humana. As tabelas de execução preservam pergunta, vetor, modelo, quantidade de fontes, tempos e ranking. Outras tabelas registram julgamentos de relevância, respostas produzidas pelo modelo e ligação entre cada marcador de fonte e o fragmento recuperado. Dessa forma, a execução pode ser auditada sem depender apenas do texto exibido ao usuário.
+
+\section{Interface de consulta e avaliação}
+
+A Figura~\ref{fig:interface-consulta} apresenta a tela principal da plataforma. O usuário formula a pergunta em linguagem natural, escolhe a quantidade de resultados e acompanha, na barra lateral, a disponibilidade e as dimensões do corpus. A interface também fornece acesso ao histórico, às métricas e ao módulo de avaliação.
+
+\begin{figure}[!htbp]
+\centering
+\begin{minipage}{0.96\textwidth}
+\caption{Tela principal da plataforma para consulta em linguagem natural}
+\label{fig:interface-consulta}
+\includegraphics[width=\linewidth]{figuras/interface_consulta.png}
+\par\smallskip
+{\setstretch{1}\footnotesize\textbf{Fonte:} Elaborada pelo autor (2026).\par}
+\end{minipage}
+\end{figure}
+
+A Figura~\ref{fig:interface-avaliacao} mostra a interface utilizada para comparar cada resposta com as fontes fornecidas ao modelo. O formulário mantém pergunta, resposta, evidências e critérios na mesma tela, reduzindo a necessidade de consultar registros externos durante o julgamento.
+
+\begin{figure}[!htbp]
+\centering
+\begin{minipage}{0.96\textwidth}
+\caption{Interface de avaliação humana das respostas geradas}
+\label{fig:interface-avaliacao}
+\includegraphics[width=\linewidth]{figuras/interface_avaliacao.png}
+\par\smallskip
+{\setstretch{1}\footnotesize\textbf{Fonte:} Elaborada pelo autor (2026), com dados de contato omitidos.\par}
+\end{minipage}
+\end{figure}
+
+Em um teste sobre inteligência artificial com o \textit{prompt} \texttt{rag-baseline-v1.4}, o modelo confundiu nomes citados em um resumo com a autoria do trabalho. Na configuração \texttt{rag-baseline-v1.5}, a aplicação passou a montar o catálogo de fontes com título, autoria, orientação, edição e marcador. O modelo produz a síntese textual, cuja saída bruta permanece nos registros da execução.
+
+A correção assegura que a identificação bibliográfica exibida não dependa da interpretação do modelo. A avaliação subsequente do conjunto congelado não identificou transferência temática entre fontes nas dez respostas examinadas. Esse resultado não elimina o risco, pois decorre de uma amostra pequena e de um único avaliador; por isso, a linha de base não é apresentada como solução definitiva.
+
+\chapter{TECNOLOGIAS E BASE DE DADOS UTILIZADAS}
+
+As escolhas tecnológicas foram orientadas por quatro requisitos do projeto: execução local, reprodutibilidade, rastreabilidade entre resposta e documento de origem e possibilidade de avaliação experimental. A arquitetura separa a preparação do corpus, a representação vetorial, a recuperação e a geração textual. Essa separação permite substituir um componente sem refazer toda a base e possibilita medir individualmente as etapas do RAG.
+
+\section{Tecnologias empregadas}
+
+A Tabela~\ref{tab:tecnologias-utilizadas} apresenta os principais componentes da implementação e sua função. As versões foram fixadas ou registradas nos artefatos para permitir a repetição das execuções.
+
+O Python foi adotado por reunir bibliotecas maduras para processamento de documentos, aprendizado de máquina e construção de serviços. A vetorização com o BAAI/bge-m3 foi executada em CPU, com comprimento máximo de 1.024 \textit{tokens} e normalização dos vetores. O identificador completo da revisão, a biblioteca, a versão do \textit{framework}, o dispositivo e os parâmetros do modelo são armazenados na tabela de modelos de \textit{embedding}. Isso evita que o nome genérico do modelo seja a única informação disponível para reprodução.
+
+O PostgreSQL foi escolhido como repositório central para manter, sob as mesmas restrições de integridade, os dados relacionais e as representações vetoriais. A extensão pgvector acrescenta o tipo \texttt{vector(1024)} e o operador de distância de cosseno, sem separar os vetores de sua proveniência documental. Na linha de base, a busca é exata: todos os 7.276 vetores compatíveis com o modelo são candidatos ao ordenamento, e os primeiros resultados são selecionados pelo menor valor de distância.
+
+O Ollama mantém o processamento generativo no computador local. Essa decisão reduz a exposição do corpus a serviços externos e permite registrar o nome e o resumo criptográfico do modelo utilizado. A camada FastAPI organiza as requisições da interface, mas não contém o conhecimento do domínio: as evidências continuam armazenadas no banco e são fornecidas ao modelo somente durante cada consulta.
+
+\begin{table}[!htbp]
+\centering
+\caption{Tecnologias utilizadas no sistema RAG}
+\label{tab:tecnologias-utilizadas}
+\renewcommand{\arraystretch}{1.18}
+\small
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{3.1cm}>{\raggedright\arraybackslash}p{3.5cm}>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Componente} & \textbf{Versão ou configuração} & \textbf{Função no projeto} \\ \midrule
+Python & 3.12.14 & Implementação dos procedimentos de auditoria, extração, segmentação, vetorização, recuperação e serviços da aplicação \cite{python}. \\
+PowerShell & Ambiente nativo do Windows & Automação operacional, execução em lotes, inicialização dos serviços e acompanhamento por arquivos de log. \\
+pypdf & 6.21.4, modo \texttt{layout} & Extração do conteúdo textual dos PDFs com preservação aproximada da organização visual e separação por página. \\
+Sentence Transformers & 6.3.0, PyTorch 2.15.0 CPU & Carregamento e execução reproduzível do modelo BAAI/bge-m3 para codificação de perguntas e fragmentos. \\
+BAAI/bge-m3 & Revisão \texttt{5617a9f...}; 1.024 dimensões & Produção de vetores densos multilíngues normalizados para representar semanticamente o corpus \cite{chen2024bgem3}. \\
+PostgreSQL e pgvector & PostgreSQL 17.11; pgvector 0.8.7 & Persistência conjunta de metadados, textos, vetores e resultados; ordenação exata pela distância de cosseno \cite{postgresql,pgvector}. \\
+FastAPI e Psycopg & FastAPI 0.121.2; Psycopg 3.2.12 & Exposição da interface local de busca, geração e avaliação, com acesso transacional ao PostgreSQL. \\
+Ollama e Llama 3 & Ollama 0.40.16; \texttt{llama3:latest}, 8B, Q4\_0 & Execução local do modelo gerador. Não participa da geração dos \textit{embeddings}; recebe somente a pergunta e as fontes recuperadas. \\ \bottomrule
+\end{tabularx}
+\fontetabela{Elaborada pelo autor (2026).}
+\end{table}
+\section{Fonte, composição e delimitação do corpus}
+
+A fonte documental é o portal público dos Anais da Semana de Iniciação Científica da UESC \cite{sicuescanais}. O recorte utilizado corresponde às edições 1 a 5 disponíveis no portal em novembro de 2026. A fotografia congelada do corpus contém 3.969 PDFs válidos e 3.970 páginas, posteriormente transformadas em 7.276 fragmentos textuais. O conjunto é utilizado como base externa de conhecimento do RAG e não como dados para treinamento ou ajuste dos parâmetros do Llama 3.
+
+Cada documento é identificado pelo resumo SHA-256 de seus bytes. Para ele são preservados edição, identificador no portal, participante principal, caminho do arquivo, tamanho, quantidade de páginas, estado de auditoria e instante de processamento. Para cada página são mantidos texto bruto, texto normalizado, método e versão do extrator, métricas de qualidade, resumo criptográfico do texto e indicação de necessidade de OCR. Título e orientador são obtidos deterministicamente do cabeçalho da página quando a resposta é montada; não são inferidos livremente pela LLM.
+
+Os endereços de e-mail existentes nos documentos não constituem campos de busca ou apresentação. Embora possam permanecer no texto documental necessário à auditoria, são omitidos do catálogo de fontes e o \textit{prompt} proíbe sua reprodução. A interface é acessível somente no ambiente local nesta etapa do projeto.
+
+\section{Organização lógica da base de dados}
+
+A modelagem foi dividida em cinco camadas relacionadas por chaves estrangeiras. A primeira reúne \texttt{documents} e \texttt{pages}, responsáveis pela proveniência e pelo texto extraído. A segunda reúne \texttt{chunks}, \texttt{embedding\_models} e \texttt{chunk\_embeddings}, que ligam cada vetor ao fragmento, à página, ao documento e à versão exata do modelo. A terceira contém \texttt{retrieval\_runs}, \texttt{retrieval\_results} e \texttt{relevance\_judgments}, preservando a pergunta, o vetor da consulta, o ranking, a distância de cosseno, os tempos medidos e o julgamento humano. A quarta reúne \texttt{generated\_answers} e \texttt{answer\_sources}, associando cada resposta às fontes numeradas efetivamente fornecidas ao gerador. A quinta contém os nós e as arestas da projeção do grafo de conhecimento, sempre vinculados aos documentos de origem.
+
+A Figura~\ref{fig:der-banco-rag} apresenta o modelo entidade-relacionamento. PK indica chave primária, FK indica chave estrangeira e UK indica uma restrição de unicidade. Essas ligações preservam a proveniência de vetores, julgamentos e respostas. A resposta gerada permanece vinculada à execução, às evidências recuperadas e aos documentos de origem.
+
+\begin{landscape}
+\begin{figure}[p]
+\centering
+\begin{minipage}{0.96\linewidth}
+\caption{Modelo entidade-relacionamento da base de dados do RAG}
+\label{fig:der-banco-rag}
+\includegraphics[width=\linewidth]{figuras/der_banco_rag_uesc.png}
+\par\smallskip
+{\setstretch{1}\footnotesize\textbf{Fonte:} Elaborada pelo autor (2026).\par}
+\end{minipage}
+\end{figure}
+\end{landscape}
+
+\input{grafo_conhecimento}
+
+\section{Persistência, auditoria e reprodutibilidade}
+
+A implementação foi organizada para que a preparação do corpus e a execução do RAG possam ser repetidas sem depender de operações manuais não documentadas. O diretório-raiz da aplicação é \path{rag_anais_uesc}; os PDFs congelados permanecem em \path{D:\tcc_sic}, separados por edição. A reprodução numérica exata pressupõe o uso dos mesmos PDFs, do manifesto preservado e das revisões de modelos registradas, pois uma nova coleta feita após alterações no portal pode produzir um corpus diferente. O ambiente utilizado emprega Windows 11, PowerShell, Python 3.12.14, Docker Desktop, PostgreSQL 17.11, pgvector 0.8.7 e Ollama 0.40.16.
+
+\subsection{Arquivos e ordem de reprodução}
+
+A reprodução segue a sequência de coleta e auditoria dos PDFs, extração textual, segmentação, auditoria do limite do tokenizador, geração de vetores, carga no PostgreSQL e construção da projeção em grafo. A extração integral é executada por \path{src/rag_anais/extract_corpus.py}, com pypdf 6.21.4 em modo \texttt{layout}. Os parâmetros de segmentação são alvo de 450 unidades lexicais, máximo de 520, mínimo desejado de 120 e sobreposição desejada de 75.
+
+A indexação e a consulta empregam a mesma revisão do BAAI/bge-m3, com vetores normalizados de 1.024 dimensões e limite de 1.024 \textit{tokens}. Na avaliação da linha de base, a recuperação por cosseno utiliza \textit{top-k} igual a 5. A geração utiliza \texttt{llama3:latest}, com o \textit{prompt} \texttt{rag-baseline-v1.5}, temperatura 0, semente 42, contexto de 8.192 \textit{tokens} e limite de 700 \textit{tokens} de saída. As verificações incluem a integridade dos PDFs, a ausência de truncamento e a correspondência entre documentos, páginas, fragmentos e vetores.
+
+O \href{https://github.com/BrenoPiropo/tcc_rag/blob/main/README.md}{\texttt{README.md} do repositório \texttt{tcc\_rag}} documenta os pré-requisitos, os comandos, a ordem de execução dos arquivos e os critérios de validação. A implementação de referência está identificada pelo \href{https://github.com/BrenoPiropo/tcc_rag/tree/2b1bb15cd4d6d9fb433c50de21f32d0dc04f6e6d}{commit \texttt{2b1bb15}}. O protocolo registra as revisões dos modelos, o resumo criptográfico do manifesto e os artefatos necessários para conferir a reprodução.
+
+\subsection{Evidências de auditoria}
+
+Os arquivos em \path{artifacts/} constituem as evidências reprodutíveis de cada etapa. Os resumos \path{corpus_audit.json}, \path{corpus_extraction_summary.json}, \path{corpus_segmentation_summary.json}, \path{embedding_token_audit.json} e \path{corpus_embeddings_summary.json} registram contagens, parâmetros, versões, durações e resumos criptográficos das entradas. Os arquivos \path{corpus_extraction_db_validation.json}, \path{corpus_segmentation_db_validation.json} e \path{corpus_embeddings_db_validation.json} preservam as verificações realizadas depois de cada carga. A validação da interface está em \path{web_interface_validation_2026-11-13.json}, e a validação do RAG com LLM está em \path{rag_llm_baseline_validation_2026-11-13.json}. Os logs independentes permitem acompanhar o processamento sem depender da interface.
+
+Cada consulta recebe um \texttt{run\_id}. São preservados a pergunta, o modelo de \textit{embedding}, o \textit{top-k}, o vetor da consulta, os fragmentos ordenados, as distâncias de cosseno e os tempos de vetorização e recuperação. Para a geração também são armazenados provedor, nome e resumo do modelo, versão e SHA-256 do \textit{prompt}, temperatura, semente, janela de contexto, limite de saída, duração, resposta, metadados brutos e fontes numeradas. Assim, uma resposta pode ser reconstruída desde o texto exibido até o fragmento, a página, o PDF e a configuração exata dos modelos utilizados.
+
+\chapter{RESULTADOS E DISCUSSÃO}
+
+O corpus integral foi coletado e auditado. As edições 1 a 5 totalizam 3.969 PDFs válidos e 3.970 páginas. O manifesto final da edição 5 contém 829 documentos, um a menos que a contagem preliminar de formulários; o relatório conserva ambos os valores e utiliza somente os arquivos efetivamente auditados nos resultados. A Tabela~\ref{tab:mapeamento} apresenta a distribuição dos documentos e fragmentos efetivamente indexados.
+
+\begin{table}[htbp]
+\centering
+\caption{Corpus validado e fragmentos indexados por edição}
+\label{tab:mapeamento}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}cccc}
+\toprule
+\textbf{Edição} & \textbf{Ano} & \textbf{PDFs válidos} & \textbf{Fragmentos} \\ \midrule
+1 & 2022 & 680 & 1.199 \\
+2 & 2023 & 973 & 1.739 \\
+3 & 2024 & 733 & 1.352 \\
+4 & 2025 & 754 & 1.414 \\
+5 & 2026 & 829 & 1.572 \\
+\textbf{Total} & 2022--2026 & \textbf{3.969} & \textbf{7.276} \\ \bottomrule
+\end{tabular*}
+\fontetabela{Dados da pesquisa (2026).}
+\end{table}
+
+A extração integral foi concluída em 336,703 segundos e não produziu página vazia, erro ou candidato a OCR. A segmentação gerou 7.276 fragmentos, todos cobertos por 7.276 \textit{embeddings} normalizados de 1.024 dimensões. A geração integral dos vetores foi executada localmente, em CPU, e não apresentou truncamento, duplicidade de identificador ou vetor órfão.
+
+No banco, uma consulta exata pelos dez vizinhos mais próximos apresentou 32,003 e 38,246 milissegundos em duas medições técnicas iniciais. Na validação da interface, com o modelo já residente em memória, uma pergunta controlada levou 135,03 milissegundos para ser vetorizada e 70,44 milissegundos para a recuperação exata. Esses valores descrevem o ambiente local e não constituem, isoladamente, uma avaliação de qualidade.
+
+A interface e a linha de base com LLM foram validadas de ponta a ponta. O teste final do \textit{pipeline} utilizou cinco fontes, 4.143 \textit{tokens} de entrada e 518 \textit{tokens} gerados; a geração levou 12.791,28 milissegundos. A persistência da resposta, das fontes, dos parâmetros e dos tempos foi confirmada. A correção determinística dos metadados solucionou o erro de autoria observado no catálogo, mas a síntese ainda requer avaliação por poder confundir conteúdos entre fontes.
+
+\section{Perguntas do experimento temático}
+
+As dez perguntas abaixo compõem o conjunto do experimento temático e orientaram os julgamentos humanos sobre a relevância das fontes e a qualidade das respostas.
+
+\begin{enumerate}
+    \item Quais contribuições para a cadeia produtiva do cacau são descritas nos trabalhos?
+    \item Quais aplicações de inteligência artificial aparecem nos Anais?
+    \item Que problemas ambientais do sul da Bahia são investigados?
+    \item Quais temas de saúde pública aparecem nos trabalhos?
+    \item Como a agricultura familiar é abordada nas pesquisas?
+    \item Quais estudos tratam da biodiversidade regional?
+    \item Que metodologias de ensino são relatadas nos trabalhos de educação?
+    \item Quais soluções de inovação tecnológica foram desenvolvidas na UESC?
+    \item Como questões de gênero, raça e inclusão social aparecem nas pesquisas?
+    \item Quais relações interdisciplinares podem ser identificadas entre trabalhos de áreas diferentes?
+\end{enumerate}
+
+Essas consultas exigem recuperação de evidências textuais. Perguntas quantitativas, como a quantidade de trabalhos por curso ou edição, foram respondidas por consultas estruturadas aos metadados e não pela geração de texto baseada em poucos trechos.
+
+Foram alcançados o corpus validado, a extração textual integral, a segmentação auditável, a geração de todos os \textit{embeddings}, o armazenamento no pgvector, a recuperação semântica exata, a interface de avaliação e uma linha de base RAG com modelo de linguagem local. A aplicação permite abrir o PDF correspondente, examinar a evidência utilizada e registrar julgamentos humanos.
+
+\input{experimento_rag}
+
+\chapter{CONCLUSÃO}
+
+Este trabalho partiu da constatação de que, embora a Universidade Estadual de Santa Cruz disponha de um acervo científico expressivo nos Anais da Semana de Iniciação Científica, a consulta e a exploração integrada desse conteúdo ainda são limitadas pela forma como os documentos são disponibilizados. Os trabalhos podem ser acessados individualmente, mas a ausência de mecanismos que permitam formular perguntas em linguagem natural dificulta a identificação de temas, pesquisadores, orientadores, cursos e relações existentes no conjunto documental.
+
+Diante desse cenário, foi desenvolvida uma plataforma destinada a ampliar o acesso às pesquisas realizadas na Universidade. A ferramenta permite transformar documentos dispersos em informações consultáveis e rastreáveis, podendo auxiliar estudantes, pesquisadores, gestores institucionais e agentes do setor produtivo na identificação de trabalhos, áreas de conhecimento e competências científicas presentes na UESC. A análise do corpus também evidenciou a diversidade temática das pesquisas produzidas nas edições estudadas e seu potencial para apoiar novas investigações, colaborações acadêmicas e aproximações entre a Universidade e a sociedade.
+
+Para alcançar esse resultado, foi implementada uma arquitetura reproduzível de recuperação e síntese de informações dos Anais da SIC/UESC. O processo compreendeu coleta, auditoria, extração textual, segmentação, geração de \textit{embeddings}, persistência no PostgreSQL com pgvector, recuperação semântica, geração local com modelo de linguagem, projeção em grafo, interface de consulta e registro das execuções. A associação entre documentos, páginas, fragmentos, vetores, execuções, respostas e fontes preservou a proveniência necessária para verificar os resultados apresentados pelo sistema.
+
+Na avaliação humana da recuperação, o MRR de 1,0000 indicou que o primeiro resultado das dez consultas foi considerado relevante. Entretanto, a saturação dessa métrica não informa a cobertura das posições seguintes. O macro Recall@$5$ condicionado ao \textit{pool}@20 foi de 0,3504 no nível de fragmento e de 0,3614 no nível de documento, demonstrando que as cinco primeiras posições recuperaram apenas parte das evidências relevantes identificadas até a vigésima posição. Esses resultados indicam que o principal aspecto a ser aprimorado na linha de base é a cobertura do ranking, especialmente em perguntas amplas que envolvem diversos trabalhos.
+
+Na avaliação da geração, o avaliador atribuiu a pontuação máxima às dez respostas nos quatro critérios considerados: fidelidade às fontes, correção das citações, completude em relação ao contexto fornecido e separação entre documentos. Esse resultado, contudo, deve ser interpretado como evidência inicial, pois o experimento utilizou um número reduzido de perguntas e contou com apenas um avaliador. Portanto, não permite generalizar o desempenho do componente gerador para todas as possíveis consultas ao corpus.
+
+A projeção em grafo complementou a recuperação semântica ao permitir consultas que exigem relações explícitas ou agregações sobre o conjunto de dados. As cinco perguntas estruturadas foram executadas de maneira determinística, e o roteador passou a distinguir consultas semânticas, estruturadas e híbridas.
+
+Conclui-se que o sistema atende ao objetivo de disponibilizar uma plataforma rastreável para consulta aos Anais da SIC/UESC em linguagem natural. Os resultados demonstram a complementaridade entre a recuperação vetorial, adequada à localização de conteúdos semanticamente relacionados, e a representação em grafo, apropriada para perguntas sobre autores, orientadores, cursos, edições e quantidades. Além de estabelecer uma referência experimental reproduzível, o trabalho preserva os artefatos necessários para avaliar novas versões e contribui para tornar o conhecimento científico produzido na UESC mais acessível, consultável e útil para a comunidade acadêmica e para a sociedade.
+
+\section{Projetos futuros}
+
+Como continuidade deste trabalho, propõe-se aprimorar a recuperação de evidências, a geração de respostas e a representação em grafo dos Anais da Semana de Iniciação Científica da UESC (SIC/UESC). Uma prioridade será investigar estratégias para ampliar a cobertura das respostas a perguntas abrangentes, nas quais as evidências podem estar distribuídas entre vários trabalhos. A avaliação poderá incluir um conjunto maior de perguntas e a participação de mais avaliadores, de modo a examinar a relevância e a diversidade das fontes recuperadas, a fidelidade das respostas e a exatidão das consultas que envolvem contagens e relações entre os registros.
+
+No âmbito institucional, propõe-se desenvolver um painel interativo para os setores responsáveis pela gestão da pesquisa na UESC. Com base nos metadados dos Anais, o painel poderá apresentar indicadores como o número de trabalhos por edição, a participação dos cursos, a distribuição temática e as relações de orientação registradas no acervo. Esses indicadores poderão apoiar a comparação entre edições da SIC, o acompanhamento da participação acadêmica e o planejamento de ações de divulgação e incentivo à iniciação científica.
+
+A Figura~\ref{fig:prototipo-painel-institucional} apresenta o protótipo do painel. Na consulta ilustrada, a pergunta em linguagem natural destaca no gráfico a edição com mais trabalhos e atualiza os indicadores da edição selecionada.
+
+\begin{figure}[!htbp]
+\centering
+\begin{minipage}{\textwidth}
+\caption{Protótipo do painel institucional de pesquisa}
+\label{fig:prototipo-painel-institucional}
+\includegraphics[width=\linewidth]{figuras/observatorio_sic_painel_institucional.png}
+\par\smallskip
+{\setstretch{1}\footnotesize\textbf{Fonte:} Elaborado pelo autor com dados da pesquisa (2026).\par}
+\end{minipage}
+\end{figure}
+
+Também se prevê disponibilizar uma versão pública da plataforma para que estudantes, pesquisadores e demais interessados possam consultar os Anais em linguagem natural. A interface poderá facilitar a localização de trabalhos por tema, autor, orientador, curso ou edição, com referências aos documentos originais para conferência. Para estudantes, esse recurso poderá apoiar a identificação de pesquisas anteriores e de possíveis interlocutores acadêmicos. Para pesquisadores, poderá facilitar a descoberta de trabalhos correlatos e de oportunidades de colaboração.
+
+A Figura~\ref{fig:prototipo-consulta-publica} ilustra uma consulta por autor no protótipo da interface pública. A resposta identifica os trabalhos encontrados e permite associá-los aos registros de origem nos Anais.
+
+\begin{figure}[!htbp]
+\centering
+\begin{minipage}{\textwidth}
+\caption{Protótipo da consulta pública em linguagem natural}
+\label{fig:prototipo-consulta-publica}
+\includegraphics[width=\linewidth]{figuras/observatorio_sic_consulta_publica.png}
+\par\smallskip
+{\setstretch{1}\footnotesize\textbf{Fonte:} Elaborado pelo autor com dados da pesquisa (2026).\par}
+\end{minipage}
+\end{figure}
+
+A incorporação de novas edições permitirá ampliar progressivamente o acervo consultável e acompanhar a evolução da produção registrada no evento. Com essas extensões, os Anais poderão servir de base tanto para a exploração pública da produção científica quanto para o planejamento de ações institucionais voltadas à iniciação científica na UESC.

@@ -1,0 +1,239 @@
+\section{Recuperação de informação}
+
+A recuperação de informação é a área responsável pelo estudo de métodos destinados a representar, organizar e localizar documentos relevantes para uma necessidade de informação \cite{baeza2013ri}. Diferentemente de uma consulta estruturada em banco de dados, na qual os critérios e os resultados costumam ser definidos por relações exatas entre campos, a recuperação de informação trabalha com consultas que podem ser incompletas, ambíguas ou formuladas em linguagem natural. Nesse contexto, a relevância não depende apenas da presença de um valor específico, mas da capacidade do documento de atender à intenção expressa pelo usuário \cite{manning2008ir}.
+
+Um sistema de recuperação normalmente recebe uma consulta, compara sua representação com um índice do corpus e produz uma lista ordenada de documentos ou trechos. Esse processo envolve decisões sobre pré-processamento, indexação, função de similaridade e ranqueamento. A qualidade da resposta depende tanto da cobertura do corpus quanto da capacidade do mecanismo de posicionar as evidências relevantes entre os primeiros resultados. Por essa razão, a avaliação deve considerar não somente se um documento foi encontrado, mas também sua posição no \textit{ranking}.
+
+Neste trabalho, o corpus é formado pelos trabalhos publicados nos Anais da SIC UESC. A necessidade de recuperar informação surge porque a leitura manual de milhares de documentos não é viável para consultas exploratórias. O sistema proposto procura reduzir esse esforço ao selecionar trechos potencialmente relevantes e preservar sua ligação com edição, título, autoria, curso, departamento, orientador, página e arquivo de origem.
+
+\section{Busca semântica}
+
+A busca semântica procura recuperar documentos com base na proximidade de significado, e não apenas na coincidência de palavras. Para isso, consultas e documentos são convertidos em vetores densos produzidos por modelos treinados para representar características linguísticas e contextuais. Quando essas representações ocupam regiões próximas no espaço vetorial, considera-se que os textos possuem maior relação semântica.
+
+Essa estratégia pode recuperar um trabalho relevante mesmo quando ele utiliza termos diferentes daqueles empregados na pergunta. O método é particularmente útil na literatura científica, em que um mesmo conceito pode aparecer por meio de siglas, sinônimos ou terminologias específicas de diferentes áreas. Trabalhos sobre recuperação densa demonstram que representações aprendidas podem ser utilizadas para recuperar passagens relacionadas a perguntas em linguagem natural \cite{karpukhin2020dpr}.
+
+A qualidade da busca semântica depende do modelo de \textit{embeddings}, do domínio e da segmentação dos documentos. A Figura~\ref{fig:busca-semantica} mostra como a proximidade vetorial ordena os fragmentos candidatos. A relevância dos trechos foi avaliada por julgamento humano. As perguntas relacionais e agregadas foram encaminhadas a consultas estruturadas.
+
+\begin{figure}[!htbp]
+\centering
+\begin{minipage}{0.96\textwidth}
+\caption{Fluxo conceitual da busca semântica com representações densas}
+\label{fig:busca-semantica}
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[font=\small]
+  \node[fluxobox] (query) at (0,1.6) {Pergunta em\\linguagem natural};
+  \node[fluxobox] (qencoder) at (3.6,1.6) {Codificador\\da consulta};
+  \node[databox] (qvector) at (7.2,1.6) {Vetor da pergunta\\$\mathbf{q}$};
+  \node[fluxobox] (corpus) at (0,-0.3) {Fragmentos\\do corpus};
+  \node[fluxobox] (dencoder) at (3.6,-0.3) {Codificador\\dos documentos};
+  \node[databox] (dvectors) at (7.2,-0.3) {Vetores indexados\\$\mathbf{d}_{1},\ldots,\mathbf{d}_{n}$};
+  \node[resultbox] (compare) at (10.8,0.65) {Comparação por\\similaridade};
+  \node[resultbox] (ranking) at (14.4,0.65) {Ranking\\Top-$k$};
+  \draw[flowarrow] (query) -- (qencoder);
+  \draw[flowarrow] (qencoder) -- (qvector);
+  \draw[flowarrow] (corpus) -- (dencoder);
+  \draw[flowarrow] (dencoder) -- (dvectors);
+  \draw[flowarrow] (qvector.east) -- (compare.north west);
+  \draw[flowarrow] (dvectors.east) -- (compare.south west);
+  \draw[flowarrow] (compare) -- (ranking);
+\end{tikzpicture}
+}
+\par\smallskip
+{\setstretch{1}\footnotesize\raggedright\textbf{Fonte:} Elaborada pelo autor com base em \cite{reimers2019sbert,karpukhin2020dpr}.\par}
+\end{minipage}
+\end{figure}
+
+\section{Transformer}
+
+A arquitetura \textit{Transformer} foi proposta para processar sequências por meio de mecanismos de atenção, reduzindo a dependência de estruturas recorrentes utilizadas anteriormente. A autoatenção permite que cada elemento de uma sequência atribua diferentes pesos aos demais elementos, produzindo uma representação contextualizada. Com isso, o modelo pode considerar relações entre palavras mesmo quando elas se encontram distantes no texto \cite{vaswani2017attention}.
+
+O mecanismo de atenção utiliza representações conhecidas como \textit{query}, \textit{key} e \textit{value}. A \textit{query} de um elemento é comparada às \textit{keys} dos demais para definir o peso de cada \textit{value} na representação. A Figura~\ref{fig:transformer} ilustra como o codificador combina múltiplas cabeças de atenção e informações posicionais.
+
+\begin{figure}[!htbp]
+\centering
+\begin{minipage}{0.86\textwidth}
+\caption{Estrutura simplificada de um bloco codificador Transformer}
+\label{fig:transformer}
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[font=\small, node distance=0.38cm]
+  \node[databox, text width=4.2cm] (input) {\textit{Embeddings} de entrada\\+ codificação posicional};
+  \node[fluxobox, text width=4.2cm, above=of input] (attention) {Atenção de múltiplas cabeças\\$Q$, $K$ e $V$};
+  \node[fluxobox, text width=4.2cm, above=of attention] (norm1) {Conexão residual + normalização};
+  \node[fluxobox, text width=4.2cm, above=of norm1] (ffn) {Rede \textit{feed-forward} por posição};
+  \node[fluxobox, text width=4.2cm, above=of ffn] (norm2) {Conexão residual + normalização};
+  \node[resultbox, text width=4.2cm, above=of norm2] (output) {Representações contextualizadas};
+  \draw[flowarrow] (input) -- (attention);
+  \draw[flowarrow] (attention) -- (norm1);
+  \draw[flowarrow] (norm1) -- (ffn);
+  \draw[flowarrow] (ffn) -- (norm2);
+  \draw[flowarrow] (norm2) -- (output);
+  \draw[flowarrow, draw=blue!60!black] ($(input.west)+(-0.15,0)$) -- ++(-0.75,0) |- (norm1.west);
+  \draw[flowarrow, draw=blue!60!black] ($(norm1.east)+(0.15,0)$) -- ++(0.75,0) |- (norm2.east);
+  \node[align=left, font=\footnotesize] at (4.3,2.35) {bloco do codificador\\repetido $N$ vezes};
+\end{tikzpicture}
+}
+\par\smallskip
+{\setstretch{1}\footnotesize\raggedright\textbf{Fonte:} Adaptada de \cite{vaswani2017attention}.\par}
+\end{minipage}
+\end{figure}
+
+Os \textit{Transformers} constituem a base de grande parte dos modelos contemporâneos de linguagem e de geração de \textit{embeddings}. No sistema desenvolvido, essa arquitetura está presente tanto no modelo que produz as representações vetoriais quanto na LLM responsável por gerar as respostas. A compreensão desse componente permite explicar por que os mesmos princípios podem ser aplicados à representação semântica e à geração textual.
+
+\section{Modelos de Linguagem de Grande Escala}
+
+Modelos de linguagem estimam a probabilidade de sequências de unidades textuais e podem gerar texto ao prever sucessivamente o próximo \textit{token}. Os modelos de grande escala, ou LLMs, ampliam essa capacidade por meio do treinamento com grandes volumes de texto e um número elevado de parâmetros. Esse processo permite realizar tarefas como resumo, resposta a perguntas e produção textual a partir de instruções, muitas vezes sem treinamento específico para cada tarefa \cite{brown2020gpt3}.
+
+Apesar da capacidade linguística, uma LLM não funciona como uma base de dados precisa. O modelo pode produzir afirmações plausíveis que não estão apoiadas por evidências, utilizar conhecimento desatualizado ou responder de maneira inadequada quando a pergunta exige informações muito específicas. A fluência da saída, portanto, não deve ser interpretada automaticamente como correção factual.
+
+No sistema proposto, a LLM não é retreinada com os trabalhos dos Anais. Os trechos são recuperados no momento da consulta e inseridos no contexto fornecido ao modelo. A função da LLM é organizar uma resposta a partir dessas evidências, indicando as fontes utilizadas e declarando insuficiência quando o contexto não sustenta uma conclusão. Essa separação entre recuperação e geração é essencial para compreender o experimento e suas limitações.
+
+\section{Embeddings}
+
+\textit{Embeddings} são representações numéricas densas que codificam unidades linguísticas, como palavras, sentenças ou documentos, em vetores de dimensão fixa. Diferentemente de representações esparsas baseadas diretamente na ocorrência de termos, os \textit{embeddings} procuram preservar relações contextuais e semânticas aprendidas pelo modelo. Textos relacionados tendem, portanto, a apresentar vetores mais próximos.
+
+Modelos como o Sentence-BERT foram desenvolvidos para produzir representações de sentenças adequadas à comparação por similaridade, reduzindo o custo de comparar pares de textos individualmente \cite{reimers2019sbert}. Em uma aplicação de recuperação, os vetores dos documentos podem ser calculados previamente, enquanto apenas a consulta precisa ser convertida durante a busca.
+
+Neste trabalho, cada trecho do corpus é representado pelo BAAI/bge-m3, modelo multilíngue que admite recuperação densa, esparsa e multivetorial, além de entradas de diferentes granularidades \cite{chen2024bgem3}. O projeto utiliza exclusivamente a saída densa de 1.024 dimensões. Os vetores são normalizados e comparados por distância de cosseno. A pontuação resultante ordena os trechos, mas não constitui, isoladamente, prova de relevância; essa interpretação depende da análise experimental e do julgamento humano.
+
+A revisão do modelo foi fixada em \texttt{5617a9f6\allowbreak 1b028005\allowbreak a4858fda\allowbreak c845db40\allowbreak 6aefb181}. Essa identificação evita que uma atualização posterior do repositório altere silenciosamente o comportamento do experimento. O tokenizador da mesma revisão foi aplicado aos 7.276 fragmentos: o maior apresentou 804 \textit{tokens}, abaixo do limite operacional de 1.024 adotado no projeto, e nenhum vetor foi gerado a partir de entrada truncada.
+
+\section{Banco de dados vetorial}
+
+Um banco de dados vetorial é uma estrutura destinada ao armazenamento e à recuperação de vetores associados a objetos e metadados. No contexto documental, cada vetor deve permanecer ligado ao trecho original, ao documento, à página e às informações necessárias para rastrear a fonte. Essa associação permite que o sistema localize vetores semelhantes e apresente ao usuário o conteúdo textual correspondente.
+
+A recuperação pode ser exata ou aproximada. Na busca exata, a consulta é comparada com todos os vetores do corpus, o que favorece a reprodutibilidade, mas aumenta o custo à medida que a base cresce. Índices de vizinhos mais próximos aproximados reduzem o número de comparações e tornam a consulta mais eficiente em grandes coleções, embora possam deixar de recuperar alguns resultados que apareceriam na busca exata \cite{gao2024survey}.
+
+O sistema utiliza PostgreSQL 17.11 com pgvector 0.8.7 \cite{postgresql,pgvector}. A Figura~\ref{fig:banco-vetorial} mostra como a consulta e os fragmentos são representados e comparados. As relações entre documentos, páginas, vetores e execuções preservam a proveniência. A validação dos 7.276 vetores verificou dimensão, normalização, vínculo com o fragmento e persistência após reinicialização.
+
+\begin{figure}[!htbp]
+\centering
+\begin{minipage}{0.96\textwidth}
+\caption{Organização conceitual de um banco de dados vetorial aplicado ao RAG}
+\label{fig:banco-vetorial}
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[font=\small]
+  \node[fluxobox] (chunk) at (0,1.6) {Fragmento\\textual};
+  \node[fluxobox] (embed) at (3.6,1.6) {Modelo de\\\textit{embedding}};
+  \node[databox] (vector) at (7.2,1.6) {Vetor\\de 1.024 dimensões};
+  \node[databox, text width=3.2cm] (db) at (10.9,0.55) {PostgreSQL + pgvector\\texto, vetor e metadados\\comparação de cosseno};
+  \node[fluxobox] (question) at (0,-0.5) {Pergunta\\do usuário};
+  \node[fluxobox] (qembed) at (3.6,-0.5) {Mesmo modelo de\\\textit{embedding}};
+  \node[databox] (qvector) at (7.2,-0.5) {Vetor\\da consulta};
+  \node[resultbox] (topk) at (14.7,0.55) {Trechos Top-$k$\\com proveniência};
+  \draw[flowarrow] (chunk) -- (embed);
+  \draw[flowarrow] (embed) -- (vector);
+  \draw[flowarrow] (vector.east) -- (db.north west);
+  \draw[flowarrow] (question) -- (qembed);
+  \draw[flowarrow] (qembed) -- (qvector);
+  \draw[flowarrow] (qvector.east) -- (db.south west);
+  \draw[flowarrow] (db) -- (topk);
+\end{tikzpicture}%
+}
+\par\smallskip
+{\setstretch{1}\footnotesize\raggedright\textbf{Fonte:} Elaborada pelo autor com base em \cite{pan2023vectordb}.\par}
+\end{minipage}
+\end{figure}
+
+A linha de base emprega busca exata, sem índice aproximado. O pgvector compara a consulta com todos os vetores e ordena os resultados pelo operador de distância de cosseno. Para o tamanho atual do corpus, essa escolha apresentou latência compatível com o uso local e elimina a perda de revocação que poderia ser introduzida por aproximação. Índices como HNSW somente serão considerados se medições futuras demonstrarem necessidade de reduzir a latência sem comprometer a qualidade da recuperação.
+
+\section{Grafos de conhecimento e consultas relacionais}
+
+Um grafo de conhecimento representa informações por meio de entidades, atributos e relações \cite{hogan2021knowledgegraphs}. A Figura~\ref{fig:grafo-conhecimento} ilustra como o grafo dos Anais liga trabalhos, pessoas, edições e cursos. Os vínculos de autoria, orientação, edição e curso permitem percorrer relações e agrupar ocorrências.
+
+\begin{figure}[!htbp]
+\centering
+\begin{minipage}{0.90\textwidth}
+\caption{Exemplo de grafo de conhecimento e consulta relacional no domínio dos Anais}
+\label{fig:grafo-conhecimento}
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[font=\small,
+  entity/.style={draw=blue!65!black, fill=blue!7, ellipse, align=center, minimum width=2.6cm, minimum height=1cm}]
+  \node[entity] (work) at (0,0) {Trabalho};
+  \node[entity] (author) at (-4.2,1.8) {Participante};
+  \node[entity] (advisor) at (-4.2,-1.8) {Orientador};
+  \node[entity] (edition) at (4.2,1.8) {Edição};
+  \node[entity] (course) at (4.2,-1.8) {Curso};
+  \draw[relationarrow] (author) -- node[above, sloped, font=\footnotesize] {AUTORIA} (work);
+  \draw[relationarrow] (work) -- node[above, sloped, pos=0.55, font=\scriptsize] {ORIENTADO POR} (advisor);
+  \draw[relationarrow] (work) -- node[above, sloped, font=\scriptsize] {PUBLICADO EM} (edition);
+  \draw[relationarrow] (work) -- node[below, sloped, font=\scriptsize] {VINCULADO A} (course);
+  \node[resultbox, text width=4.3cm] (query) at (0,-3.8) {Consulta relacional:\\``qual orientador possui mais trabalhos?''};
+  \draw[flowarrow] (advisor.south east) -- (query.north west);
+  \draw[flowarrow] (work.south) -- (query.north);
+\end{tikzpicture}
+}
+\par\smallskip
+{\setstretch{1}\footnotesize\raggedright\textbf{Fonte:} Elaborada pelo autor com base em \cite{hogan2021knowledgegraphs}.\par}
+\end{minipage}
+\end{figure}
+
+Essa distinção é importante porque nem toda pergunta sobre o corpus é uma pergunta de recuperação textual. Uma consulta como ``quais aplicações de inteligência artificial aparecem nos Anais?'' exige localizar e sintetizar evidências em passagens. Por outro lado, ``qual orientador possui mais trabalhos publicados?'' exige considerar todos os registros, resolver a identidade dos orientadores, contar relações entre orientadores e trabalhos e ordenar o resultado. Recuperar apenas os cinco fragmentos semanticamente mais próximos não garante cobertura suficiente para esse tipo de agregação e pode produzir uma resposta quantitativamente incorreta.
+
+O grafo foi construído a partir dos metadados do portal e dos cabeçalhos validados dos documentos. Cada trabalho foi associado ao participante principal, ao orientador identificável, à edição e ao curso informado. Nomes e cursos foram normalizados para formar chaves canônicas, preservando-se o rótulo original e a proveniência documental. Casos sem marcador explícito permaneceram sem relação, em vez de receber preenchimento especulativo. As consultas relacionais e agregadas são executadas de forma determinística no PostgreSQL, sem atribuir à LLM a produção de contagens.
+
+O uso de grafos também pode complementar o RAG em uma arquitetura híbrida. A literatura denomina \textit{GraphRAG} um conjunto de abordagens que utiliza estruturas em grafo para organizar relações e apoiar a recuperação e a síntese, especialmente em consultas globais sobre uma coleção \cite{edge2024graphrag}. A implementação deste TCC é mais restrita: utiliza uma projeção relacional em grafo para filtrar documentos e executar agregações, sem reproduzir todo o método de sumarização comunitária descrito nessa literatura.
+
+A arquitetura implementada encaminha perguntas diferentes para mecanismos adequados. Consultas documentais utilizam \textit{embeddings} e recuperação de passagens; consultas estruturadas utilizam agregações relacionais sobre o grafo; e perguntas híbridas combinam um filtro relacional com a busca vetorial antes da geração. As execuções preservam a origem dos dados, a rota selecionada, a consulta realizada e as fontes textuais utilizadas.
+
+\section{Chunking}
+
+\textit{Chunking} é o processo de dividir um documento em unidades menores que possam ser individualmente representadas e recuperadas. Em trabalhos científicos, a indexação do documento completo pode produzir uma representação excessivamente geral, dificultando a localização de uma passagem específica. A divisão em trechos aproxima a unidade de recuperação do conteúdo necessário para responder a uma consulta.
+
+O tamanho dos trechos envolve um compromisso. Trechos muito curtos podem perder informações necessárias à interpretação, enquanto trechos muito longos podem misturar assuntos diferentes e ocupar uma parcela excessiva da janela de contexto da LLM. A sobreposição entre trechos procura reduzir perdas nas fronteiras da segmentação, repetindo parte do texto anterior na unidade seguinte \cite{gao2024survey}.
+
+Na configuração implementada, os documentos são segmentados com alvo de 450 unidades lexicais Unicode, sobreposição desejada de 75 e limite máximo configurado de 520. A segmentação procura encerrar o fragmento em limites de sentença e preserva página, posições inicial e final e hash do texto. Foram produzidos 7.276 fragmentos, com média de 335,41 unidades lexicais e máximo observado de 450. A auditoria por intervalos confirmou cobertura integral do texto normalizado, sem identificadores duplicados.
+
+A escolha equilibra especificidade e contexto. Fragmentos menores favorecem a localização de passagens, enquanto a sobreposição reduz a perda de informação nas fronteiras. A unidade lexical foi utilizada para tornar o procedimento independente do tokenizador durante a segmentação; posteriormente, todos os fragmentos foram medidos pelo tokenizador efetivamente usado na geração dos \textit{embeddings}.
+
+\section{Pipeline RAG}
+
+\textit{Retrieval-Augmented Generation} combina um mecanismo de recuperação de informação com um modelo gerador. Na proposta original, informações recuperadas de uma fonte externa são utilizadas para apoiar a geração, permitindo que a resposta considere conteúdos que não precisam estar armazenados nos parâmetros do modelo \cite{lewis2020rag}. A abordagem busca aumentar a fundamentação e permitir a atualização da base documental sem retreinar toda a LLM.
+
+A Figura~\ref{fig:pipeline-rag} apresenta as duas fases do \textit{pipeline}. Na preparação, o sistema valida os PDFs, extrai e segmenta o texto e associa os vetores aos metadados. Na consulta, o BAAI/bge-m3 representa a pergunta, o pgvector recupera os cinco trechos mais próximos e a LLM local produz a resposta com indicação das fontes.
+
+\begin{figure}[!htbp]
+\centering
+\begin{minipage}{0.96\textwidth}
+\caption{Pipeline RAG com as fases de preparação do corpus e consulta}
+\label{fig:pipeline-rag}
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[font=\small]
+  \node[font=\bfseries, anchor=west] at (-1.2,2.45) {Preparação do corpus};
+  \node[fluxobox, text width=2.1cm] (pdfs) at (0,1.55) {PDFs\\validados};
+  \node[fluxobox, text width=2.1cm] (extract) at (3.0,1.55) {Extração\\e \textit{chunking}};
+  \node[fluxobox, text width=2.1cm] (embeddings) at (6.0,1.55) {Geração de\\\textit{embeddings}};
+  \node[databox, text width=2.3cm] (index) at (9.1,1.55) {Índice vetorial\\+ metadados};
+  \node[font=\bfseries, anchor=west] at (-1.2,0.25) {Consulta};
+  \node[fluxobox, text width=2.1cm] (question) at (0,-0.65) {Pergunta};
+  \node[fluxobox, text width=2.45cm] (retrieve) at (3.0,-0.65) {Recuperação\\Top-$k$};
+  \node[databox, text width=2.1cm] (context) at (6.0,-0.65) {Contexto\\com fontes};
+  \node[fluxobox, text width=2.1cm] (llm) at (9.0,-0.65) {LLM\\local};
+  \node[resultbox, text width=2.5cm] (answer) at (12.3,-0.65) {Resposta\\fundamentada};
+  \draw[flowarrow] (pdfs) -- (extract);
+  \draw[flowarrow] (extract) -- (embeddings);
+  \draw[flowarrow] (embeddings) -- (index);
+  \draw[flowarrow] (question) -- (retrieve);
+  \draw[flowarrow] (index.south) |- (retrieve.north);
+  \draw[flowarrow] (retrieve) -- (context);
+  \draw[flowarrow] (context) -- (llm);
+  \draw[flowarrow] (llm) -- (answer);
+\end{tikzpicture}%
+}
+\par\smallskip
+{\setstretch{1}\footnotesize\raggedright\textbf{Fonte:} Elaborada pelo autor com base em \cite{lewis2020rag,gao2024survey}.\par}
+\end{minipage}
+\end{figure}
+
+O gerador da linha de base é o \texttt{llama3:latest}, executado pelo Ollama, com temperatura 0, semente 42, janela de 8.192 \textit{tokens} e limite de 700 \textit{tokens} de saída. O modelo recebe páginas integrais relacionadas aos fragmentos selecionados. Cada fonte é numerada, e a aplicação exige citações no formato \texttt{[F1]}, \texttt{[F2]} e assim sucessivamente, além de recusa explícita quando a evidência for insuficiente.
+
+Título, participante principal, orientador e edição não são inferidos livremente pela LLM. A aplicação extrai título e orientador do cabeçalho, consulta o participante no manifesto e produz um catálogo determinístico antes da síntese. Essa separação foi introduzida após a observação de que uma referência bibliográfica interna havia sido confundida com a autoria de um trabalho. A saída bruta do modelo permanece armazenada para auditoria.
+
+O RAG não elimina automaticamente respostas incorretas. Se a recuperação selecionar evidências irrelevantes, incompletas ou contraditórias, a geração poderá reproduzir esses problemas. Além disso, o modelo pode interpretar inadequadamente o contexto ou produzir citações incompatíveis com as afirmações. Testes exploratórios anteriores ao conjunto congelado mostraram possível transferência temática entre fontes, embora o catálogo de metadados estivesse correto. Por esse motivo, a avaliação deve observar separadamente o recuperador, o contexto fornecido e cada afirmação da resposta final \cite{gao2024survey}.
+
+\section{Métricas de avaliação}
+
+A avaliação de um sistema RAG deve distinguir a qualidade da recuperação da qualidade da geração. Para analisar o recuperador, é necessário estabelecer quais documentos ou trechos são relevantes para cada consulta. A partir desses julgamentos, podem ser calculadas métricas que verificam se as evidências esperadas foram localizadas e em que posição aparecem no \textit{ranking} \cite{manning2008ir}.
+
+O Recall@$k$ mede a proporção de itens relevantes recuperados entre os primeiros $k$ resultados. Um valor elevado indica que o sistema apresentou uma parcela maior das evidências relevantes dentro do limite analisado. O \textit{Mean Reciprocal Rank} (MRR), por sua vez, considera a posição do primeiro resultado relevante: quanto mais próximo do início da lista ele estiver, maior será o valor atribuído à consulta. A média é calculada sobre o conjunto de perguntas.
+
+Essas métricas não avaliam integralmente a resposta produzida pela LLM. Por isso, o protocolo também prevê julgamento humano da relevância das fontes, da fidelidade factual, da correção das citações, da completude e da adequação das recusas. Os tempos de execução e a sobreposição das fontes complementam a análise, mas não devem ser tratados isoladamente como demonstração de superioridade de uma versão.
